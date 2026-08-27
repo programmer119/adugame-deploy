@@ -1,8 +1,12 @@
 // ADUGAME v2 runtime hardening patches.
-// These patches preserve the reverse-engineered gameplay constants while fixing
-// input-race and hit-area defects found by real Chromium pointer QA.
+// Browser-QA fixes only: gameplay FEEL constants remain authoritative in core.js.
 (() => {
-  // 1) Drag pickup animation must never fight the user's pointer coordinates.
+  const pointerNear = (scene, x, y, radius) => {
+    const p = scene.input?.activePointer;
+    return !!p && dist(p.x, p.y, x, y) <= radius;
+  };
+
+  // 1) Pickup animation must never fight the live drag coordinates.
   BaseRound.prototype.dragify = function(obj, opts = {}) {
     const w = Math.max(FEEL.input.minHitPx, (obj.width || 72) * FEEL.input.hitScale);
     const h = Math.max(FEEL.input.minHitPx, (obj.height || 72) * FEEL.input.hitScale);
@@ -37,7 +41,6 @@
 
     obj.on('drag', (p, x, y) => {
       if (this.interactionLocked) return;
-      // Once the pointer actually moves, it becomes the sole authority for position.
       if (obj._pickupLiftTween) {
         obj._pickupLiftTween.stop();
         obj._pickupLiftTween = null;
@@ -59,28 +62,58 @@
     return obj;
   };
 
-  // 2) Mini faucet in G1R3 had only an implicit Container hit area.
-  // Give it the same forgiving child-oriented interaction margin as the rest of the game.
+  // 2) G1R2: child-friendly drop acceptance uses either dragged-object overlap or
+  // the actual released pointer. This prevents a renderer-frame lag from turning a
+  // visually correct soap drop into an error.
+  const g1r2DropSoap = G1R2.prototype.dropSoap;
+  G1R2.prototype.dropSoap = function(o) {
+    const accepted = this.step === 1 && (
+      dist(o.x, o.y, 650, 455) <= 175 || pointerNear(this, 650, 455, 175)
+    );
+    if (!accepted) return g1r2DropSoap.call(this, o);
+    this.snap(o, 520, 465, () => {
+      audio.plop();
+      this.add.text(650, 435, '○   ○  ○   ○', { fontSize: '30px', color: '#7bdff2' }).setOrigin(.5).setName('foam');
+      this.step = 2;
+      this.status.setText('손 위를 눌러 좌우로 충분히 문질러요');
+      this.hintTarget = { x: 650, y: 455 };
+      this.tweens.add({ targets: o, x: o.home.x, y: o.home.y, duration: 180 });
+    });
+  };
+
+  // 3) G1R3: use a dedicated top-layer faucet input zone. Re-setting a Container's
+  // input shape was not enough on all Phaser/Chromium combinations.
   const g1r3Create = G1R3.prototype.create;
   G1R3.prototype.create = function() {
     g1r3Create.call(this);
-    this.faucet.setInteractive(
-      new Phaser.Geom.Rectangle(-60, -60, 120, 120),
-      Phaser.Geom.Rectangle.Contains
-    );
+    this.faucetHit = this.add.zone(180, 250, 120, 120)
+      .setInteractive(new Phaser.Geom.Rectangle(-60, -60, 120, 120), Phaser.Geom.Rectangle.Contains)
+      .setDepth(120)
+      .setName('routine_faucet_hit');
+    this.faucetHit.on('pointerup', () => this.startHands());
   };
 
-  // 3) Loaded laundry objects must stop intercepting the washer door until the wash finishes.
-  const g2r2Drop = G2R2.prototype.drop;
+  // 4) G2R2: accept a washer drop by object overlap OR release-pointer overlap,
+  // then make loaded items non-intercepting until the cycle finishes.
+  const g2r2DropOriginal = G2R2.prototype.drop;
   G2R2.prototype.drop = function(o) {
-    const alreadyLoaded = this.loaded.has(o.kind);
-    g2r2Drop.call(this, o);
-    if (!alreadyLoaded && this.loaded.has(o.kind)) {
-      this.time.delayedCall(FEEL.snap.correctDuration + 20, () => {
+    const washerRelease = dist(o.x, o.y, 650, 355) < 165 || pointerNear(this, 650, 355, 165);
+    if (washerRelease && !this.loaded.has(o.kind) && !this.washed) {
+      if (!this.washerOpen || this.running) {
+        this.curious(this.washer);
+        this.wrongReturn(o, 'washer_closed', this.washer);
+        return;
+      }
+      this.loaded.add(o.kind);
+      this.snap(o, 650, 355, () => o.setAlpha(.28));
+      this.time.delayedCall(FEEL.snap.correctDuration + 25, () => {
         if (o.input) o.input.enabled = false;
       });
+      return;
     }
+    g2r2DropOriginal.call(this, o);
   };
+
   const g2r2StartWash = G2R2.prototype.startWash;
   G2R2.prototype.startWash = function() {
     g2r2StartWash.call(this);
@@ -92,16 +125,14 @@
     });
   };
 
-  // 4) A successful screwdriver rotation used to fall through to wrongReturn on dragend.
+  // 5) Successful screwdriver release is not an error.
   const g2r3Drop = G2R3.prototype.drop;
   G2R3.prototype.drop = function(o) {
     if (this.stage >= 3 && o.kind === 'driver') return;
     return g2r3Drop.call(this, o);
   };
 
-  // 5) Phaser custom ellipse hit-test on the mixing Zone was not receiving pointer motion
-  // consistently in headless/desktop Chromium. Use a default zone and evaluate the exact
-  // ellipse mathematically in world coordinates instead.
+  // 6) Craft mixing: default Zone hit surface + explicit mathematical ellipse.
   CraftRound.prototype.makeMixSurface = function() {
     const inside = p => {
       const dx = (p.x - 650) / 170;
@@ -129,7 +160,7 @@
     });
   };
 
-  // 6) Expand color controls to explicit 88x88 zones, independent of rendered-circle bounds.
+  // 7) Explicit 88x88 color hit zones.
   const craftCreate = CraftRound.prototype.create;
   CraftRound.prototype.create = function() {
     craftCreate.call(this);
@@ -146,8 +177,7 @@
     });
   };
 
-  // 7) The deformable blob itself gets a robust rectangular input surface; its visual
-  // deformation and spring model remain unchanged.
+  // 8) Robust tactile-input surface for the deformable blob.
   const craftCompleteMix = CraftRound.prototype.completeMix;
   CraftRound.prototype.completeMix = function() {
     craftCompleteMix.call(this);
