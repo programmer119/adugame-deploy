@@ -4,7 +4,7 @@ module.exports = defineConfig({
   testMatch: /e2e\.spec\.js/,
   timeout: 60000,
   expect: { timeout: 10000 },
-  workers: 1,
+  workers: 3,
   retries: 0,
   reporter: [['list'], ['json', { outputFile: 'qa/reports/playwright-report.json' }]],
   use: {
