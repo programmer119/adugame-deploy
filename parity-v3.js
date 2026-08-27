@@ -49,6 +49,20 @@
     return result;
   };
 
+  // G2R3: keep the visible car paint and machine-readable paint state synchronized.
+  // Phaser Containers can accept tint-like state without updating our custom paintColor;
+  // redirect the original setTint call through repaint so visual + state change together.
+  const g2r3CreateV3 = G2R3.prototype.create;
+  G2R3.prototype.create = function() {
+    g2r3CreateV3.call(this);
+    if (this.car?.repaint) {
+      this.car.setTint = color => {
+        this.car.repaint(color);
+        return this.car;
+      };
+    }
+  };
+
   // G2R3: convert source "cards" into installed-part visuals while they are attached
   // to the car. Wheel/screw keep their icon only; driver keeps its icon while rotating.
   // This avoids white card backgrounds and labels piling up on the repair target.
@@ -66,6 +80,31 @@
     o._v3Compact = false;
   };
 
+  const moveDriverInstructionToSafeLane = scene => {
+    let attempts = 0;
+    const poll = scene.time.addEvent({
+      delay: 30,
+      loop: true,
+      callback: () => {
+        attempts++;
+        const instruction = scene.children.list.find(
+          o => o?.type === 'Text' && String(o.text || '').startsWith('드라이버 손잡이를') && o.active !== false
+        );
+        if (instruction) {
+          instruction.setPosition(700, 132).setDepth(90);
+          instruction.setFontSize?.(15);
+          instruction.setBackgroundColor?.('#ffffffdd');
+          instruction.setPadding?.(10, 6, 10, 6);
+          instruction.setName('driver_instruction');
+          scene.driverInstruction = instruction;
+          poll.remove(false);
+        } else if (attempts >= 20) {
+          poll.remove(false);
+        }
+      }
+    });
+  };
+
   const g2r3DropV3 = G2R3.prototype.drop;
   G2R3.prototype.drop = function(o) {
     const before = this.stage;
@@ -77,6 +116,7 @@
     if (wheelOK || screwOK || driverOK) {
       this.time.delayedCall(FEEL.snap.correctDuration + 20, () => compactInstalled(o));
     }
+    if (driverOK) moveDriverInstructionToSafeLane(this);
     return result;
   };
 
@@ -85,6 +125,8 @@
     const before = this.stage;
     const result = g2r3RotateV3.call(this, p);
     if (before < 3 && this.stage >= 3) {
+      this.driverInstruction?.destroy();
+      this.driverInstruction = null;
       this.time.delayedCall(280, () => restoreToolCard(this.driver));
     }
     return result;
