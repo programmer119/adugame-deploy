@@ -1,18 +1,18 @@
-name: ADUGAME v2 browser QA
+name: ADUGAME browser QA
 
 on:
   push:
-    branches: [qa-v2]
+    branches: [qa-v2, qa-v3-parity]
   workflow_dispatch:
 
 concurrency:
-  group: adugame-v2-browser-qa-${{ github.ref }}
+  group: adugame-browser-qa-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   browser-e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -30,7 +30,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: adugame-v2-browser-qa
+          name: adugame-browser-qa-${{ github.ref_name }}
           path: |
             qa/reports/
             test-results/
