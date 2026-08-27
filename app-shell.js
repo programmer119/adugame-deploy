@@ -9,8 +9,11 @@ function PhaserStage({gameId,round,onDone}){
   const ref=useRef(null);
   useEffect(()=>{
     const scene=roundClass(gameId,round,onDone);
-    const game=new Phaser.Game({ type:Phaser.AUTO, width:1280, height:720, parent:ref.current, backgroundColor:'#fff8ea', scene:[scene], scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH}, render:{antialias:true,pixelArt:false}, input:{activePointers:3} });
-    return()=>game.destroy(true);
+    const game=new Phaser.Game({type:Phaser.AUTO,width:FEEL.logical.width,height:FEEL.logical.height,parent:ref.current,backgroundColor:'#fff8ea',scene:[scene],scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},render:{antialias:true,pixelArt:false},input:{activePointers:3}});
+    window.__ADUGAME_GAME__=game;
+    window.__ADUGAME_SCENE__=()=>game.scene.getScenes(true)[0]||game.scene.getScenes(false)[0];
+    window.__ADUGAME_DEBUG__=()=>window.__ADUGAME_SCENE__()?.debugState?.()||null;
+    return()=>{if(window.__ADUGAME_GAME__===game){delete window.__ADUGAME_GAME__;delete window.__ADUGAME_SCENE__;delete window.__ADUGAME_DEBUG__;}game.destroy(true);};
   },[gameId,round]);
   return React.createElement('div',{className:'phaser-wrap',ref});
 }
@@ -20,8 +23,8 @@ function Home({onStart}){
     React.createElement('section',{className:'hero'},
       React.createElement('div',{className:'eyebrow'},'ADUGAME · WEB PRACTICE LAB'),
       React.createElement('h1',null,'만져보고, 발견하고, 완성하는 ',React.createElement('span',null,'9개의 실습')),
-      React.createElement('p',null,'검증된 아동용 게임의 재미 구조를 웹 실습에 맞게 역설계한 3가지 게임 × 3라운드 데모입니다.'),
-      React.createElement('div',{className:'chips'},['React shell','Phaser 3','Mouse + Touch','No Login','9 Rounds'].map(x=>React.createElement('span',{key:x},x)))
+      React.createElement('p',null,'검증된 아동용 게임의 플레이 감각을 행동·상태·좌표·타이밍 단위로 역설계한 3가지 게임 × 3라운드 데모입니다.'),
+      React.createElement('div',{className:'chips'},['React shell','Phaser 3','Mouse + Touch','No Login','9 Rounds','Browser E2E'].map(x=>React.createElement('span',{key:x},x)))
     ),
     React.createElement('section',{className:'cards'},GAMES.map(g=>React.createElement('article',{className:'game-card',key:g.id},
       React.createElement('div',{className:'game-icon'},g.icon),React.createElement('h2',null,g.title),React.createElement('p',{className:'dna'},g.dna),
@@ -30,13 +33,16 @@ function Home({onStart}){
   );
 }
 
+function initialPlayFromQuery(){const p=new URLSearchParams(location.search),g=Number(p.get('game')),r=Number(p.get('round'));return g>=1&&g<=3&&r>=1&&r<=3?{game:g,round:r}:null;}
+
 function App(){
-  const [play,setPlay]=useState(null); const [scores,setScores]=useState({});
-  const done=(result)=>{ if(result?.home){setPlay(null);return;} if(play){setScores(s=>({...s,[`${play.game}-${play.round}`]:result.score})); const next=play.round<3?{game:play.game,round:play.round+1}:null; setPlay(next); }};
+  const [play,setPlay]=useState(initialPlayFromQuery);const [scores,setScores]=useState({});
+  useEffect(()=>{window.__ADUGAME_APP_STATE__=()=>({play,scores});},[play,scores]);
+  const done=(result)=>{if(result?.home){setPlay(null);return;}if(play){setScores(s=>({...s,[`${play.game}-${play.round}`]:result.score}));const e2e=new URLSearchParams(location.search).get('e2e')==='1';if(e2e){window.__ADUGAME_LAST_RESULT__={game:play.game,round:play.round,...result};return;}const next=play.round<3?{game:play.game,round:play.round+1}:null;setPlay(next);}};
   return React.createElement(React.Fragment,null,
     React.createElement('header',{className:'topbar'},React.createElement('div',{className:'brand',onClick:()=>setPlay(null)},React.createElement('span',{className:'brandmark'},'A'),React.createElement('strong',null,'ADUGAME')),React.createElement('div',{className:'scoreline'},Object.keys(scores).length?`완료 ${Object.keys(scores).length}/9`:'웹 가상실습 데모')),
     play?React.createElement('div',{className:'stage-shell'},React.createElement(PhaserStage,{gameId:play.game,round:play.round,onDone:done})):React.createElement(Home,{onStart:(game,round)=>setPlay({game,round})}),
-    React.createElement('footer',null,'Educational web-game prototype · independent original assets & mechanics reconstruction')
+    React.createElement('footer',null,'Educational web-game prototype · original implementation · reverse-engineered interaction targets')
   );
 }
 
