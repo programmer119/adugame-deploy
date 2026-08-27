@@ -5,7 +5,7 @@
   "description": "ADUGAME v2 staging branch browser QA",
   "scripts": {
     "serve": "python -m http.server 4173 -d .",
-    "syntax": "node --check core.js && node --check game1.js && node --check game2.js && node --check game3.js && node --check gameplay-patches.js && node --check app-shell.js",
+    "syntax": "node --check core.js && node --check game1.js && node --check game2.js && node --check game3.js && node --check gameplay-patches.js && node --check parity-fixes.js && node --check app-shell.js",
     "test:e2e": "playwright test",
     "test": "npm run syntax && npm run test:e2e"
   },
