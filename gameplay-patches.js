@@ -63,15 +63,15 @@
   };
 
   // 2) G1R2: use a top-layer faucet surface and scene-level scrub sampling.
-  // The visual container remains unchanged; only the forgiving child input surface is hardened.
+  // Default Zone hit geometry is more reliable across Phaser/Chromium than a custom local rectangle.
   const g1r2Create = G1R2.prototype.create;
   G1R2.prototype.create = function() {
     g1r2Create.call(this);
     this.faucetHit = this.add.zone(650, 270, 170, 160)
-      .setInteractive(new Phaser.Geom.Rectangle(-85, -80, 170, 160), Phaser.Geom.Rectangle.Contains)
+      .setInteractive()
       .setDepth(120)
       .setName('wash_faucet_hit');
-    this.faucetHit.on('pointerup', () => this.tapFaucet());
+    this.faucetHit.on('pointerdown', () => this.tapFaucet());
     this.input.on('pointermove', p => {
       if (this.step !== 2 || !p.isDown) return;
       if (Math.abs(p.x - 650) <= 150 && Math.abs(p.y - 455) <= 82) this.scrubMove(p);
@@ -100,10 +100,10 @@
   G1R3.prototype.create = function() {
     g1r3Create.call(this);
     this.faucetHit = this.add.zone(180, 250, 120, 120)
-      .setInteractive(new Phaser.Geom.Rectangle(-60, -60, 120, 120), Phaser.Geom.Rectangle.Contains)
+      .setInteractive()
       .setDepth(120)
       .setName('routine_faucet_hit');
-    this.faucetHit.on('pointerup', () => this.startHands());
+    this.faucetHit.on('pointerdown', () => this.startHands());
     this.input.on('pointermove', p => {
       if (this.step !== .5 || !p.isDown) return;
       if (Math.abs(p.x - 300) <= 85 && Math.abs(p.y - 255) <= 60) this.handMove(p);
@@ -115,14 +115,12 @@
     });
   };
 
-  // 4) G2R2: stop the washer door from receiving the same release used to drop laundry,
-  // enlarge the four pickup surfaces, and keep loaded objects non-intercepting.
+  // 4) G2R2: keep the original non-overlapping item hit areas, but stop the washer
+  // door from receiving the same release used to drop laundry.
   const g2r2Create = G2R2.prototype.create;
   G2R2.prototype.create = function() {
     g2r2Create.call(this);
     this.items.forEach(o => {
-      o.setInteractive(new Phaser.Geom.Rectangle(-72, -66, 144, 132), Phaser.Geom.Rectangle.Contains);
-      this.input.setDraggable(o);
       o.on('dragstart', () => {
         if (this.washer?.door?.input) this.washer.door.input.enabled = false;
       });
