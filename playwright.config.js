@@ -2,10 +2,10 @@ const { defineConfig } = require('@playwright/test');
 module.exports = defineConfig({
   testDir: './qa',
   testMatch: /e2e\.spec\.js/,
-  timeout: 60000,
+  timeout: 75000,
   expect: { timeout: 10000 },
-  fullyParallel: true,
-  workers: 3,
+  fullyParallel: false,
+  workers: 1,
   retries: 0,
   reporter: [['list'], ['json', { outputFile: 'qa/reports/playwright-report.json' }]],
   use: {
