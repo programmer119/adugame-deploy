@@ -62,9 +62,23 @@
     return obj;
   };
 
-  // 2) G1R2: child-friendly drop acceptance uses either dragged-object overlap or
-  // the actual released pointer. This prevents a renderer-frame lag from turning a
-  // visually correct soap drop into an error.
+  // 2) G1R2: use a top-layer faucet surface and scene-level scrub sampling.
+  // The visual container remains unchanged; only the forgiving child input surface is hardened.
+  const g1r2Create = G1R2.prototype.create;
+  G1R2.prototype.create = function() {
+    g1r2Create.call(this);
+    this.faucetHit = this.add.zone(650, 270, 170, 160)
+      .setInteractive(new Phaser.Geom.Rectangle(-85, -80, 170, 160), Phaser.Geom.Rectangle.Contains)
+      .setDepth(120)
+      .setName('wash_faucet_hit');
+    this.faucetHit.on('pointerup', () => this.tapFaucet());
+    this.input.on('pointermove', p => {
+      if (this.step !== 2 || !p.isDown) return;
+      if (Math.abs(p.x - 650) <= 150 && Math.abs(p.y - 455) <= 82) this.scrubMove(p);
+      else this.lastMove = null;
+    });
+  };
+
   const g1r2DropSoap = G1R2.prototype.dropSoap;
   G1R2.prototype.dropSoap = function(o) {
     const accepted = this.step === 1 && (
@@ -81,22 +95,7 @@
     });
   };
 
-  // G1R2's scrub is a continuous gesture, so sample it from the scene-level pointer
-  // as well as the visual hand object's hit area. This avoids gaps when a fast finger
-  // crosses the two-hand seam or briefly leaves the child GameObject's hit polygon.
-  const g1r2Create = G1R2.prototype.create;
-  G1R2.prototype.create = function() {
-    g1r2Create.call(this);
-    this.input.on('pointermove', p => {
-      if (this.step !== 2 || !p.isDown) return;
-      if (Math.abs(p.x - 650) <= 145 && Math.abs(p.y - 455) <= 80) this.scrubMove(p);
-      else this.lastMove = null;
-    });
-  };
-
-  // 3) G1R3: use a dedicated top-layer faucet input zone. Re-setting a Container's
-  // input shape was not enough on all Phaser/Chromium combinations. Hand washing also
-  // uses scene-level pointer sampling for the same continuous-gesture reason as G1R2.
+  // 3) G1R3: dedicated faucet, continuous hand sampling, and larger food pickup zones.
   const g1r3Create = G1R3.prototype.create;
   G1R3.prototype.create = function() {
     g1r3Create.call(this);
@@ -107,16 +106,37 @@
     this.faucetHit.on('pointerup', () => this.startHands());
     this.input.on('pointermove', p => {
       if (this.step !== .5 || !p.isDown) return;
-      if (Math.abs(p.x - 300) <= 82 && Math.abs(p.y - 255) <= 58) this.handMove(p);
+      if (Math.abs(p.x - 300) <= 85 && Math.abs(p.y - 255) <= 60) this.handMove(p);
       else this.lastHand = null;
+    });
+    this.foods.forEach(o => {
+      o.setInteractive(new Phaser.Geom.Rectangle(-80, -55, 160, 110), Phaser.Geom.Rectangle.Contains);
+      this.input.setDraggable(o);
     });
   };
 
-  // 4) G2R2: accept a washer drop by object overlap OR release-pointer overlap,
-  // then make loaded items non-intercepting until the cycle finishes.
+  // 4) G2R2: stop the washer door from receiving the same release used to drop laundry,
+  // enlarge the four pickup surfaces, and keep loaded objects non-intercepting.
+  const g2r2Create = G2R2.prototype.create;
+  G2R2.prototype.create = function() {
+    g2r2Create.call(this);
+    this.items.forEach(o => {
+      o.setInteractive(new Phaser.Geom.Rectangle(-72, -66, 144, 132), Phaser.Geom.Rectangle.Contains);
+      this.input.setDraggable(o);
+      o.on('dragstart', () => {
+        if (this.washer?.door?.input) this.washer.door.input.enabled = false;
+      });
+      o.on('dragend', () => {
+        this.time.delayedCall(120, () => {
+          if (this.washer?.door?.input && !this.running) this.washer.door.input.enabled = true;
+        });
+      });
+    });
+  };
+
   const g2r2DropOriginal = G2R2.prototype.drop;
   G2R2.prototype.drop = function(o) {
-    const washerRelease = dist(o.x, o.y, 650, 355) < 165 || pointerNear(this, 650, 355, 165);
+    const washerRelease = dist(o.x, o.y, 650, 355) < 175 || pointerNear(this, 650, 355, 175);
     if (washerRelease && !this.loaded.has(o.kind) && !this.washed) {
       if (!this.washerOpen || this.running) {
         this.curious(this.washer);
