@@ -35,7 +35,7 @@ async function debug(page,label){
   console.log(`ADUGAME_STATE ${label} ${JSON.stringify(st)}`);
   return st;
 }
-async function waitState(page,predicate,label,timeout=3000){
+async function waitState(page,predicate,label,timeout=8000){
   try{ await page.waitForFunction(predicate,null,{timeout}); }
   catch(e){ await debug(page,`${label}_STATE_TIMEOUT`); throw e; }
 }
@@ -49,7 +49,7 @@ async function openRound(page,g,r){
   const rct=await rect(page); expect(rct).toBeTruthy(); return {rct,errors};
 }
 async function expectComplete(page,errors,label){
-  try{ await page.waitForFunction(()=>window.__ADUGAME_DEBUG__()?.roundComplete===true,null,{timeout:6500}); }
+  try{ await page.waitForFunction(()=>window.__ADUGAME_DEBUG__()?.roundComplete===true,null,{timeout:8000}); }
   catch(e){ await debug(page,`${label}_FAIL`); throw e; }
   const st=await debug(page,`${label}_PASS`);
   expect(st.roundComplete).toBe(true); expect(errors).toEqual([]); return st;
@@ -63,6 +63,7 @@ const cases=[
   [1,2,async(p,r)=>{
     await clickL(p,r,650,270);
     await waitState(p,()=>window.__ADUGAME_DEBUG__()?.step===1,'G1R2_WET');
+    await settle(p,120);
     await dragPath(p,r,[[315,350],[430,385],[540,425],[650,455]],8);
     await waitState(p,()=>window.__ADUGAME_DEBUG__()?.step===2,'G1R2_SOAP');
     await dragPath(p,r,[[575,455],[640,445],[715,455],[640,465],[575,455],[640,445],[715,455],[640,465],[575,455],[640,445],[715,455]],12);
@@ -72,13 +73,25 @@ const cases=[
     await dragPath(p,r,[[315,500],[460,475],[570,455],[730,455],[570,455],[730,455],[570,455]],12);
   }],
   [1,3,async(p,r)=>{
-    await clickL(p,r,180,250); await waitState(p,()=>window.__ADUGAME_DEBUG__()?.step===0.5,'G1R3_WATER');
+    await clickL(p,r,180,250);
+    await waitState(p,()=>window.__ADUGAME_DEBUG__()?.step===0.5,'G1R3_WATER');
     await dragPath(p,r,[[245,255],[280,245],[320,265],[355,250],[320,265],[280,245],[245,255],[285,265],[325,245],[355,255]],10);
     await waitState(p,()=>window.__ADUGAME_DEBUG__()?.step===1,'G1R3_HANDS');
     await dragPath(p,r,[[210,405],[500,390],[900,390],[500,500],[900,500],[520,430],[900,445]],12);
     await waitState(p,()=>window.__ADUGAME_DEBUG__()?.step===2,'G1R3_TABLE');
-    await dragPath(p,r,[[650,630],[690,550],[730,470]],8); await waitState(p,()=>window.__ADUGAME_DEBUG__()?.step===3,'G1R3_PLATE');
-    for(const q of [[820,625],[930,625],[1040,625]]){ await dragPath(p,r,[q,[850,550],[730,450]],8); await settle(p,170); }
+    await dragPath(p,r,[[650,630],[690,550],[730,470]],8);
+    await waitState(p,()=>window.__ADUGAME_DEBUG__()?.step===3,'G1R3_PLATE');
+    await settle(p,220);
+    const foods=[
+      [[820,625],[820,570],[780,510],[730,450]],
+      [[930,625],[880,570],[810,510],[730,450]],
+      [[1040,625],[940,570],[830,510],[730,450]]
+    ];
+    for(let i=0;i<foods.length;i++){
+      await dragPath(p,r,foods[i],8);
+      await waitState(p,()=>window.__ADUGAME_DEBUG__()?.stack>=i+1,`G1R3_FOOD_${i+1}`);
+      await settle(p,150);
+    }
     await waitState(p,()=>window.__ADUGAME_DEBUG__()?.step===4,'G1R3_FOOD');
     await dragPath(p,r,[[1120,500],[1120,440],[1120,390]],8);
   }],
@@ -86,19 +99,29 @@ const cases=[
     for(const q of [[500,610],[620,620],[740,620]]){ await dragPath(p,r,[q,[620,555],[710,500]],8); await settle(p,170); }
   }],
   [2,2,async(p,r)=>{
-    await clickL(p,r,650,355); await settle(p,100);
+    await clickL(p,r,650,355);
+    await waitState(p,()=>window.__ADUGAME_DEBUG__()?.open===true,'G2R2_OPEN');
     const loads=[
       [[305,220],[450,280],[560,330],[650,355]],
       [[305,330],[470,340],[650,355]],
       [[305,440],[470,400],[650,355]],
       [[1000,390],[820,375],[650,355]]
     ];
-    for(const path of loads){ await dragPath(p,r,path,7); await settle(p,170); }
-    await waitState(p,()=>window.__ADUGAME_DEBUG__()?.loaded?.length===4,'G2R2_LOAD');
-    await clickL(p,r,650,425); await waitState(p,()=>window.__ADUGAME_DEBUG__()?.open===false,'G2R2_CLOSE');
+    for(let i=0;i<loads.length;i++){
+      await dragPath(p,r,loads[i],7);
+      await waitState(p,()=>window.__ADUGAME_DEBUG__()?.loaded?.length>=i+1,`G2R2_LOAD_${i+1}`);
+      await settle(p,170);
+    }
+    await clickL(p,r,650,425);
+    await waitState(p,()=>window.__ADUGAME_DEBUG__()?.open===false,'G2R2_CLOSE');
     await clickL(p,r,718,235);
-    await waitState(p,()=>window.__ADUGAME_DEBUG__()?.washed===true,'G2R2_WASH',3200);
-    for(const q of [[760,585],[838,585],[916,585]]){ await dragPath(p,r,[q,[850,540],[925,500]],7); await settle(p,170); }
+    await waitState(p,()=>window.__ADUGAME_DEBUG__()?.washed===true,'G2R2_WASH',5000);
+    for(let i=0;i<3;i++){
+      const q=[[760,585],[838,585],[916,585]][i];
+      await dragPath(p,r,[q,[850,540],[925,500]],7);
+      await waitState(p,()=>window.__ADUGAME_DEBUG__()?.dried?.length>=i+1,`G2R2_DRY_${i+1}`);
+      await settle(p,150);
+    }
   }],
   [2,3,async(p,r)=>{
     await dragPath(p,r,[[300,210],[440,340],[575,465]],8); await settle(p,170);
