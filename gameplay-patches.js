@@ -81,8 +81,22 @@
     });
   };
 
+  // G1R2's scrub is a continuous gesture, so sample it from the scene-level pointer
+  // as well as the visual hand object's hit area. This avoids gaps when a fast finger
+  // crosses the two-hand seam or briefly leaves the child GameObject's hit polygon.
+  const g1r2Create = G1R2.prototype.create;
+  G1R2.prototype.create = function() {
+    g1r2Create.call(this);
+    this.input.on('pointermove', p => {
+      if (this.step !== 2 || !p.isDown) return;
+      if (Math.abs(p.x - 650) <= 145 && Math.abs(p.y - 455) <= 80) this.scrubMove(p);
+      else this.lastMove = null;
+    });
+  };
+
   // 3) G1R3: use a dedicated top-layer faucet input zone. Re-setting a Container's
-  // input shape was not enough on all Phaser/Chromium combinations.
+  // input shape was not enough on all Phaser/Chromium combinations. Hand washing also
+  // uses scene-level pointer sampling for the same continuous-gesture reason as G1R2.
   const g1r3Create = G1R3.prototype.create;
   G1R3.prototype.create = function() {
     g1r3Create.call(this);
@@ -91,6 +105,11 @@
       .setDepth(120)
       .setName('routine_faucet_hit');
     this.faucetHit.on('pointerup', () => this.startHands());
+    this.input.on('pointermove', p => {
+      if (this.step !== .5 || !p.isDown) return;
+      if (Math.abs(p.x - 300) <= 82 && Math.abs(p.y - 255) <= 58) this.handMove(p);
+      else this.lastHand = null;
+    });
   };
 
   // 4) G2R2: accept a washer drop by object overlap OR release-pointer overlap,
