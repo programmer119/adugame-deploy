@@ -1,0 +1,33 @@
+name: ADUGAME v2 browser QA
+
+on:
+  push:
+    branches: [qa-v2]
+  workflow_dispatch:
+
+jobs:
+  browser-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install test dependencies
+        run: npm install --no-audit --no-fund
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Static syntax gate
+        run: npm run syntax
+      - name: Full-cycle browser gate
+        run: npm run test:e2e
+      - name: Upload QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: adugame-v2-browser-qa
+          path: |
+            qa/reports/
+            test-results/
+          if-no-files-found: ignore
