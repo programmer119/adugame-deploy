@@ -149,15 +149,26 @@
     g2r2DropOriginal.call(this, o);
   };
 
+  // Washing is complete only when the clothes are usable again. The base scene moves
+  // them out at the end of the spin; this 16ms poll re-enables input on the first frame
+  // where `washed` becomes true, avoiding a small race between the animation and pickup.
   const g2r2StartWash = G2R2.prototype.startWash;
   G2R2.prototype.startWash = function() {
     g2r2StartWash.call(this);
-    this.time.delayedCall(1550, () => {
-      if (!this.washed) return;
-      this.items
-        .filter(o => ['shirt', 'pants', 'sock'].includes(o.kind))
-        .forEach(o => { if (o.input) o.input.enabled = true; });
+    this._dryUnlockTimer?.remove(false);
+    const unlock = this.time.addEvent({
+      delay: 16,
+      loop: true,
+      callback: () => {
+        if (!this.washed) return;
+        this.items
+          .filter(o => ['shirt', 'pants', 'sock'].includes(o.kind))
+          .forEach(o => { if (o.input) o.input.enabled = true; });
+        unlock.remove(false);
+        if (this._dryUnlockTimer === unlock) this._dryUnlockTimer = null;
+      }
     });
+    this._dryUnlockTimer = unlock;
   };
 
   // 5) Successful screwdriver release is not an error.
