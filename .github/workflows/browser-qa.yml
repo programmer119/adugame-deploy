@@ -5,6 +5,10 @@ on:
     branches: [qa-v2]
   workflow_dispatch:
 
+concurrency:
+  group: adugame-v2-browser-qa-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   browser-e2e:
     runs-on: ubuntu-latest
