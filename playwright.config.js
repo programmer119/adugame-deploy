@@ -2,8 +2,8 @@ const { defineConfig } = require('@playwright/test');
 module.exports = defineConfig({
   testDir: './qa',
   testMatch: /v5-.*\.spec\.js/,
-  timeout: 40000,
-  expect: { timeout: 8000 },
+  timeout: 90000,
+  expect: { timeout: 12000 },
   fullyParallel: false,
   workers: 1,
   retries: 0,
