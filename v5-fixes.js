@@ -1,6 +1,6 @@
 // ADUGAME benchmark-v5 targeted fixes discovered by real Chromium QA.
 (() => {
-  window.__ADUGAME_V5_FIXES__={version:'5.0.6',loaded:true};
+  window.__ADUGAME_V5_FIXES__={version:'5.0.7',loaded:true};
 
   const g1r1Create=G1R1.prototype.create;
   G1R1.prototype.create=function(){
@@ -24,13 +24,14 @@
     this.snap(o,slot,470,()=>{o.setScale(.52);if(o.input)o.input.enabled=false;this.v5SetStep(this.tidied.size);if(this.tidied.size===3){this.step=1;this.status.setText('정리 완료! 사과·당근·통곡물처럼 균형 잡힌 음식 3가지를 접시에 골라요');this.hintTarget={x:560,y:250};this.sparkle(255,465,6);}});
   };
 
-  // Preserve all existing discovery wrappers (especially wash_done input restore),
-  // then only reposition the newly-created visual note and temporarily hide the
-  // current floor title. Never replace discovery semantics outright.
+  // Preserve all existing discovery semantics. Only the two laundry notices that
+  // actually occupy the floor-title band replace that title while visible.
   const FLOOR_TITLES=new Set(['차고·마당','주방·거실','욕실·세탁실','아이방·테라스']);
+  const TITLE_LANE_DISCOVERIES=new Set(['washer_open','wash_done']);
   [G2R1,G2R2,G2R3].forEach(K=>{
     const discover=K.prototype.discover;
     K.prototype.discover=function(id,x,y,msg){
+      if(!TITLE_LANE_DISCOVERIES.has(id))return discover.call(this,id,x,y,msg);
       const before=new Set(this.children.list.filter(o=>o?.name==='discovery_note'&&o.active!==false));
       const result=discover.call(this,id,x,y,msg);
       const note=this.children.list.filter(o=>o?.name==='discovery_note'&&o.active!==false&&!before.has(o)).pop();
