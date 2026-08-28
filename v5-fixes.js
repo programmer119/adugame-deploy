@@ -1,6 +1,6 @@
 // ADUGAME benchmark-v5 targeted fixes discovered by real Chromium QA.
 (() => {
-  window.__ADUGAME_V5_FIXES__={version:'5.0.5',loaded:true};
+  window.__ADUGAME_V5_FIXES__={version:'5.0.6',loaded:true};
 
   const g1r1Create=G1R1.prototype.create;
   G1R1.prototype.create=function(){
@@ -24,16 +24,32 @@
     this.snap(o,slot,470,()=>{o.setScale(.52);if(o.input)o.input.enabled=false;this.v5SetStep(this.tidied.size);if(this.tidied.size===3){this.step=1;this.status.setText('정리 완료! 사과·당근·통곡물처럼 균형 잡힌 음식 3가지를 접시에 골라요');this.hintTarget={x:560,y:250};this.sparkle(255,465,6);}});
   };
 
+  // Preserve all existing discovery wrappers (especially wash_done input restore),
+  // then only reposition the newly-created visual note and temporarily hide the
+  // current floor title. Never replace discovery semantics outright.
   const FLOOR_TITLES=new Set(['차고·마당','주방·거실','욕실·세탁실','아이방·테라스']);
-  function houseDiscover(id,x,y,msg){
-    if(this.discoveries.has(id))return;this.discoveries.add(id);this.sparkle(x,y,7);
-    if(this._v5DiscoveryRestore)this._v5DiscoveryRestore();if(this._v5DiscoveryNote?.active)this._v5DiscoveryNote.destroy();
-    const floorAt=this.currentFloor,title=(this.floorObjects?.[floorAt]||[]).find(o=>o?.type==='Text'&&FLOOR_TITLES.has(String(o.text||'')));if(title?.active)title.setVisible(false);
-    const restore=()=>{if(title?.active)title.setVisible(this.currentFloor===floorAt);if(this._v5DiscoveryRestore===restore)this._v5DiscoveryRestore=null;};this._v5DiscoveryRestore=restore;
-    const note=this.add.text(640,145,'발견! '+msg,{fontFamily:'Arial',fontSize:'15px',fontStyle:'bold',color:'#ffffff',backgroundColor:'#6c63ff',padding:{left:10,right:10,top:6,bottom:6}}).setOrigin(.5).setDepth(2500).setName('discovery_note');this._v5DiscoveryNote=note;
-    this.tweens.add({targets:note,y:125,alpha:0,duration:1050,hold:420,onComplete:()=>{restore();if(this._v5DiscoveryNote===note)this._v5DiscoveryNote=null;note.destroy();}});audio.pop();telemetry('discovery',{id,round:this.scene.key});
-  }
-  [G2R1,G2R2,G2R3].forEach(K=>{K.prototype.discover=houseDiscover;});
+  [G2R1,G2R2,G2R3].forEach(K=>{
+    const discover=K.prototype.discover;
+    K.prototype.discover=function(id,x,y,msg){
+      const before=new Set(this.children.list.filter(o=>o?.name==='discovery_note'&&o.active!==false));
+      const result=discover.call(this,id,x,y,msg);
+      const note=this.children.list.filter(o=>o?.name==='discovery_note'&&o.active!==false&&!before.has(o)).pop();
+      if(!note)return result;
+      if(this._v5DiscoveryRestore)this._v5DiscoveryRestore();
+      const floorAt=this.currentFloor;
+      const title=(this.floorObjects?.[floorAt]||[]).find(o=>o?.type==='Text'&&FLOOR_TITLES.has(String(o.text||'')));
+      if(title?.active)title.setVisible(false);
+      note.setPosition(640,145);
+      const restore=()=>{
+        if(this._v5DiscoveryRestore!==restore)return;
+        if(title?.active)title.setVisible(this.currentFloor===floorAt);
+        this._v5DiscoveryRestore=null;
+      };
+      this._v5DiscoveryRestore=restore;
+      this.time.delayedCall(1600,restore);
+      return result;
+    };
+  });
 
   [G2R1,G2R2,G2R3].forEach(K=>{
     const show=K.prototype.showFloor;
@@ -49,9 +65,6 @@
   const g2r3Repair=G2R3.prototype.repairCar;
   G2R3.prototype.repairCar=function(o){const before=this.mission?.repair||0;const result=g2r3Repair.call(this,o);if(o?.state==='installed'&&this.mission.repair===before+1){const idx=this.mission.repair-1;o.x=this.car.x-80+idx*80;o.y=this.car.y+50;o.setScale(.62);o.home={x:o.x,y:o.y};}return result;};
 
-  // Disable every input recursively, including children that have been moved into
-  // Phaser Containers (floor rail buttons, vocabulary controls, etc.). The result
-  // overlay and continue button are created after this pass, so they remain active.
   const baseFinish=BaseRound.prototype.finish;
   BaseRound.prototype.finish=function(extra={}){
     if(!this.roundComplete){
