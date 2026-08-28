@@ -1,6 +1,6 @@
 // ADUGAME parity-v4: deterministic fixes for state transforms that must not race snap timers.
 (() => {
-  window.__ADUGAME_PARITY_V4__ = { version: '4.0', loaded: true };
+  window.__ADUGAME_PARITY_V4__ = { version: '4.1', loaded: true };
 
   const texts = o => Array.isArray(o?.list) ? o.list.filter(c => c?.type === 'Text') : [];
   const graphics = o => Array.isArray(o?.list) ? o.list.filter(c => c?.type === 'Graphics') : [];
@@ -38,7 +38,9 @@
     return result;
   };
 
-  // G2R3: installed parts compact synchronously; paint/cloth always return home.
+  // G2R3: installed parts compact synchronously. Paint/cloth are transient tools:
+  // handle them here without calling the older snap wrappers, which otherwise queue
+  // competing tweens and can leave the tool parked on the car.
   const g2Drop = G2R3.prototype.drop;
   G2R3.prototype.drop = function(o) {
     const before = this.stage;
@@ -48,27 +50,35 @@
       (before === 0 && o.kind === 'wheel' && dWheel < 125) ||
       (before === 1 && o.kind === 'screw' && dWheel < 115) ||
       (before === 2 && o.kind === 'driver' && dWheel < 125);
-    const transient = (o.kind === 'paint' || o.kind === 'cloth') && dCar < 190;
+    const paintSuccess = o.kind === 'paint' && dCar < 190;
+    const clothSuccess = o.kind === 'cloth' && dCar < 190;
+
+    if ((paintSuccess || clothSuccess) && o.parityHome) {
+      this.tweens.killTweensOf(o);
+      if (paintSuccess) {
+        this.car?.repaint?.(0x88ccff);
+        this.discover('paint', 750, 260, '자동차 색을 꾸밀 수도 있어요');
+        this.sparkle(705, 365, 7);
+      } else {
+        this.sparkle(705, 405, 10);
+        this.discover('polish', 750, 270, '차를 닦으면 반짝여요');
+      }
+      audio.pop();
+      this.tweens.add({
+        targets: o,
+        x: o.parityHome.x,
+        y: o.parityHome.y,
+        angle: 0,
+        scaleX: o._baseScaleX || 1,
+        scaleY: o._baseScaleY || 1,
+        duration: 220,
+        ease: 'Cubic.Out'
+      });
+      return;
+    }
 
     const result = g2Drop.call(this, o);
     if (install) compactInstalled(o);
-
-    if (transient && o.parityHome) {
-      this.time.delayedCall(FEEL.snap.correctDuration + 24, () => {
-        if (!o.active) return;
-        this.tweens.killTweensOf(o);
-        this.tweens.add({
-          targets: o,
-          x: o.parityHome.x,
-          y: o.parityHome.y,
-          angle: 0,
-          scaleX: o._baseScaleX || 1,
-          scaleY: o._baseScaleY || 1,
-          duration: 170,
-          ease: 'Cubic.Out'
-        });
-      });
-    }
     return result;
   };
 })();
