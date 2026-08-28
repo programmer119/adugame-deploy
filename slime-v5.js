@@ -17,10 +17,22 @@
     }
     create(){
       super.create();
+      // parity-v4 added a one-shot shelf to the legacy round. v5 owns the persistent shelf.
+      if(this.finishedShelf?.active)this.finishedShelf.destroy(true);
+      this.finishedShelf=null;this.finishedJars=[];
       this.storeShelf=this.add.container(1080,630).setName('store_shelf').setDepth(25);const g=this.add.graphics();g.fillStyle(0xc69c6d,.32).fillRoundedRect(-135,-38,270,76,17);g.lineStyle(3,COLORS.brown,.5).strokeRoundedRect(-135,-38,270,76,17);g.lineStyle(5,COLORS.brown,.42).lineBetween(-125,20,125,20);this.storeShelf.add(g);
       this.customerName=this.add.text(1080,365,CUSTOMER_NAMES[0],{fontFamily:'Arial',fontSize:'14px',fontStyle:'bold',color:'#607086',backgroundColor:'#ffffffcc',padding:{left:8,right:8,top:4,bottom:4}}).setOrigin(.5).setDepth(40);
       this.orderCounter=this.add.text(1080,405,`주문 1 / ${this.orders.length}`,{fontFamily:'Arial',fontSize:'13px',fontStyle:'bold',color:'#607086'}).setOrigin(.5).setDepth(40);
       GAMES[2].rounds=['2회 고객 주문','3회 복합 주문','3회 자유 장식 주문'];GAMES[2].dna='고객 주문 · 촉감 · 장식 · 진열 · 다음 주문';
+    }
+    completeMix(){
+      if(this.mixed)return;
+      super.completeMix();
+      // The stirring surface used to sit above the finished blob and steal touch input.
+      // Once mixed, the actual deformable blob is the only active tactile surface.
+      this.mixZone?.disableInteractive();
+      this.slimeBlob?.zone?.setDepth(65);
+      telemetry('tactile_surface_enabled',{orderIndex:this.orderIndex});
     }
     makeFinishedJar(){
       const jar=this.add.container(650,420).setName('finished_jar_'+this.ordersServed).setDepth(70),g=this.add.graphics(),fill=colorValue[this.chosen.color]||COLORS.purple;
@@ -48,6 +60,8 @@
       if(this.slimeBlob){this.slimeBlob.zone?.destroy();this.slimeBlob.graphics?.destroy();this.slimeBlob=null;}
       if(this.liquid?.active)this.liquid.destroy();this.liquid=null;this.bowl.setAlpha(1);
       this.ingredients.clear();this.chosen={color:null,decos:[],container:null};this.mixed=false;this.mixAngle=0;this.mixStart=0;this.lastAngle=null;this.liquidColor=null;
+      // Re-arm the stir surface for the next batch after the previous tactile phase disabled it.
+      this.mixZone?.setInteractive(new Phaser.Geom.Ellipse(0,0,340,210),Phaser.Geom.Ellipse.Contains);
       this.children.list.filter(o=>o?.name?.startsWith('deco_')).forEach(o=>{
         o.setVisible(true).setAlpha(1).setScale(1);o.x=o.home?.x??o.x;o.y=o.home?.y??o.y;
         const w=Math.max(FEEL.input.minHitPx,(o.width||82)*FEEL.input.hitScale),h=Math.max(FEEL.input.minHitPx,(o.height||82)*FEEL.input.hitScale);
@@ -58,7 +72,7 @@
       this.customer.setX(1325).setScale(1);this.tweens.add({targets:this.customer,x:1080,duration:420,ease:'Cubic.Out'});this.orderBubble.setScale(.82);this.tweens.add({targets:this.orderBubble,scale:1,duration:220,ease:'Back.Out'});
       this.status.setText('다음 손님이에요. BASE와 ACT부터 다시 만들어봐요');this.hintTarget={x:this.base.x,y:this.base.y};this.serveButton.setInteractive({useHandCursor:true});this.interactionLocked=false;telemetry('next_order',{orderIndex:this.orderIndex,order:this.order});
     }
-    debugState(){return {...super.debugState(),benchmarkV5:'persistent-slime-store',orderIndex:this.orderIndex,totalOrders:this.orders.length,ordersServed:this.ordersServed,shelfCount:this.finishedJars.filter(j=>j.active!==false).length};}
+    debugState(){return {...super.debugState(),benchmarkV5:'persistent-slime-store',orderIndex:this.orderIndex,totalOrders:this.orders.length,ordersServed:this.ordersServed,shelfCount:this.finishedJars.filter(j=>j.active!==false).length,tactileEnabled:!!this.slimeBlob?.zone?.input?.enabled};}
   }
 
   CraftRound=CraftStoreV5;
