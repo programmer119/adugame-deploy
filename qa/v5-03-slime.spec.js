@@ -37,10 +37,13 @@ async function serve(page,r,decoX,served){
   await waitFor(page,n=>window.__ADUGAME_DEBUG__().ordersServed>=n,9000,served);
 }
 
-test('v5 slime second customer fully rearms ingredients, mixer and serving',async({page})=>{
+test('v5 slime second customer fully rearms ingredients, mixer, economy and serving',async({page})=>{
   await page.goto('/index.html?game=3&round=1&e2e=1',{waitUntil:'networkidle'});
   await waitFor(page,()=>window.__ADUGAME_DEBUG__?.()?.benchmarkV5==='persistent-slime-store');
   const r=await page.locator('canvas').boundingBox();expect(r).toBeTruthy();
+
+  let boot=await state(page,'boot');
+  expect(boot.supplyShop).toBe(true);expect(boot.coinBalance).toBe(0);expect(boot.supplyUnlocked).toEqual([]);
 
   await mixBatch(page,r,210,'order1');
   await serve(page,r,210,1);
@@ -48,10 +51,20 @@ test('v5 slime second customer fully rearms ingredients, mixer and serving',asyn
   let st=await state(page,'order2-ready');
   expect(st.ordersServed).toBe(1);expect(st.orderIndex).toBe(1);expect(st.ingredients).toEqual([]);
   expect(st.baseInput).toBe(true);expect(st.activatorInput).toBe(true);expect(st.mixInput).toBe(true);
+  expect(st.coinEarned).toBe(3);expect(st.coinBalance).toBe(3);
+
+  // O-PUBLIC economy parity: earned coins can procure a new slime supply.
+  await clickL(page,r,596,188);
+  await waitFor(page,()=>window.__ADUGAME_DEBUG__().supplyUnlocked.includes('sparkle'),5000);
+  st=await state(page,'sparkle-bought');
+  expect(st.coinBalance).toBe(1);expect(st.supplyUnlocked).toContain('sparkle');
+  const bonus=await page.evaluate(()=>{const s=window.__ADUGAME_SCENE__();const o=s.bonusDecos.find(x=>x.supplyId==='sparkle');return {visible:o?.visible,input:!!o?.input?.enabled,x:o?.x,y:o?.y};});
+  expect(bonus.visible).toBe(true);expect(bonus.input).toBe(true);
 
   await mixBatch(page,r,440,'order2');
   await serve(page,r,400,2);
   await waitFor(page,()=>window.__ADUGAME_DEBUG__().roundComplete===true,9000);
   st=await state(page,'complete');
   expect(st.roundComplete).toBe(true);expect(st.ordersServed).toBe(2);expect(st.shelfCount).toBe(2);
+  expect(st.coinEarned).toBe(6);expect(st.supplyUnlocked).toContain('sparkle');
 });
