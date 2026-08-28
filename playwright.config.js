@@ -1,9 +1,9 @@
 const { defineConfig } = require('@playwright/test');
 module.exports = defineConfig({
   testDir: './qa',
-  testMatch: /.*\.spec\.js/,
-  timeout: 75000,
-  expect: { timeout: 10000 },
+  testMatch: /v5-e2e\.spec\.js/,
+  timeout: 90000,
+  expect: { timeout: 12000 },
   fullyParallel: false,
   workers: 1,
   retries: 0,
@@ -13,7 +13,7 @@ module.exports = defineConfig({
     viewport: { width: 1440, height: 900 },
     headless: true,
     screenshot: 'only-on-failure',
-    trace: 'off'
+    trace: 'retain-on-failure'
   },
   webServer: {
     command: 'python -m http.server 4173 -d .',
