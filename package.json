@@ -5,9 +5,10 @@
   "description": "ADUGAME benchmark-v5 staging browser QA",
   "scripts": {
     "serve": "python -m http.server 4173 -d .",
-    "syntax": "node --check core.js && node --check game1.js && node --check game2.js && node --check game3.js && node --check gameplay-patches.js && node --check parity-fixes.js && node --check parity-v3.js && node --check parity-v4.js && node --check habit-v5.js && node --check house-v5.js && node --check house-v5-fixes.js && node --check house-v5-wash-fix.js && node --check slime-v5.js && node --check slime-tactile-fix.js && node --check v5-fixes.js && node --check app-shell.js",
+    "syntax": "node --check core.js && node --check game1.js && node --check game2.js && node --check game3.js && node --check gameplay-patches.js && node --check parity-fixes.js && node --check parity-v3.js && node --check parity-v4.js && node --check habit-v5.js && node --check house-v5.js && node --check house-v5-fixes.js && node --check house-v5-wash-fix.js && node --check slime-v5.js && node --check slime-tactile-fix.js && node --check v5-fixes.js && node --check app-shell.js && node --check qa/visual-audit.spec.js && node --check playwright.visual.config.js",
     "test:e2e": "playwright test",
-    "test": "npm run syntax && npm run test:e2e"
+    "test:visual": "playwright test --config=playwright.visual.config.js",
+    "test": "npm run syntax && npm run test:e2e && npm run test:visual"
   },
   "devDependencies": {
     "@playwright/test": "1.55.0"
