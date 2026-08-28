@@ -3,10 +3,11 @@ const { test, expect } = require('@playwright/test');
 async function rect(page){return page.locator('canvas').boundingBox();}
 function map(r,x,y){return {x:r.x+x/1280*r.width,y:r.y+y/720*r.height};}
 async function clickL(page,r,x,y){const p=map(r,x,y);await page.mouse.click(p.x,p.y);}
-async function dragL(page,r,pts,duration=300){
-  const ps=pts.map(([x,y])=>map(r,x,y));await page.mouse.move(ps[0].x,ps[0].y);await page.mouse.down();
-  const seg=Math.max(1,ps.length-1),steps=Math.max(5,Math.floor(24/seg));
-  for(let k=1;k<ps.length;k++){const a=ps[k-1],b=ps[k];for(let i=1;i<=steps;i++){const q=i/steps;await page.mouse.move(a.x+(b.x-a.x)*q,a.y+(b.y-a.y)*q);await page.waitForTimeout(duration/(seg*steps));}}
+async function dragL(page,r,pts,duration=240){
+  const ps=pts.map(([x,y])=>map(r,x,y));
+  await page.mouse.move(ps[0].x,ps[0].y);await page.mouse.down();
+  const pause=Math.max(18,Math.floor(duration/Math.max(1,ps.length-1)));
+  for(let i=1;i<ps.length;i++){await page.mouse.move(ps[i].x,ps[i].y);await page.waitForTimeout(pause);}
   await page.mouse.up();
 }
 async function state(page,label){const s=await page.evaluate(()=>window.__ADUGAME_DEBUG__());console.log('V5_G1R1_STATE',label,JSON.stringify(s));return s;}
@@ -28,11 +29,12 @@ test('v5 G1R1 exact state chain',async({page})=>{
   await page.waitForFunction(()=>window.__ADUGAME_DEBUG__()?.step===2,{timeout:3000});
   expect((await state(page,'wet')).step).toBe(2);
 
-  await dragL(page,r,[[175,430],[290,450],[400,475]],420);
+  await dragL(page,r,[[175,430],[400,475]],180);
   await page.waitForFunction(()=>window.__ADUGAME_DEBUG__()?.step===3,{timeout:3000});
   expect((await state(page,'soap')).step).toBe(3);
 
-  await dragL(page,r,[[330,475],[470,475],[330,475],[470,475],[330,475]],1100);
+  // Five 80px passes remain inside the hands zone and exceed the 340px threshold.
+  await dragL(page,r,[[330,475],[410,475],[330,475],[410,475],[330,475],[410,475]],520);
   await page.waitForFunction(()=>window.__ADUGAME_DEBUG__()?.step===4,{timeout:3000});
   const scrub=await state(page,'scrub');
   expect(scrub.scrubDistance).toBeGreaterThanOrEqual(340);
