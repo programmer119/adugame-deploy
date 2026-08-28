@@ -2,7 +2,7 @@ name: ADUGAME browser QA
 
 on:
   push:
-    branches: [qa-v2, qa-v3-parity]
+    branches: [qa-v2, qa-v3-parity, benchmark-v5]
   workflow_dispatch:
 
 concurrency:
