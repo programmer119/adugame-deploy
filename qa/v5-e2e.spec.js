@@ -20,10 +20,13 @@ async function openRound(page,g,r){
   const rct=await rect(page); expect(rct).toBeTruthy(); return {rct,errors};
 }
 async function expectComplete(page,errors){await page.waitForFunction(()=>window.__ADUGAME_DEBUG__()?.roundComplete===true,{timeout:18000});const st=await page.evaluate(()=>window.__ADUGAME_DEBUG__());expect(st.roundComplete).toBe(true);expect(errors).toEqual([]);return st;}
-async function craftOrder(p,r,{colorX,decoX,containerX=null,extraX=null},served){
+async function mixBase(p,r,colorX){
   await dragL(p,r,[[230,230],[650,420]],300);await dragL(p,r,[[360,230],[650,420]],300);await p.waitForTimeout(180);
   await clickL(p,r,colorX,355);await dragL(p,r,circle(650,420,90,3,24),1750);
   await p.waitForFunction(()=>window.__ADUGAME_DEBUG__()?.mixed===true,{timeout:6000});
+}
+async function craftOrder(p,r,{colorX,decoX,containerX=null,extraX=null},served){
+  await mixBase(p,r,colorX);
   await dragL(p,r,[[decoX,485],[650,420]],300);
   if(extraX!==null)await dragL(p,r,[[extraX,485],[690,440]],300);
   if(containerX!==null)await clickL(p,r,containerX,585);
@@ -92,6 +95,21 @@ test('v5 house has four-floor transport semantics, 100 portable items, and 10 ch
 test('v5 slime store persists finished jars and advances customers',async({page})=>{
   const {rct}=await openRound(page,3,1);let st=await page.evaluate(()=>window.__ADUGAME_DEBUG__());expect(st.benchmarkV5).toBe('persistent-slime-store');expect(st.totalOrders).toBe(2);
   await craftOrder(page,rct,{colorX:210,decoX:210},1);st=await page.evaluate(()=>window.__ADUGAME_DEBUG__());expect(st.ordersServed).toBe(1);expect(st.shelfCount).toBe(1);expect(st.orderIndex).toBe(1);
+});
+
+test('v5 slime tactile pull deforms independent vertices and springs back',async({page})=>{
+  const {rct,errors}=await openRound(page,3,1);await mixBase(page,rct,210);
+  let st=await page.evaluate(()=>window.__ADUGAME_DEBUG__());expect(st.tactileEnabled).toBe(true);
+  const before=await page.evaluate(()=>Math.max(...window.__ADUGAME_SCENE__().slimeBlob.points.map(p=>Math.hypot(p.x-p.bx,p.y-p.by))));expect(before).toBeLessThan(2);
+  const a=map(rct,755,420),b=map(rct,815,420);await page.mouse.move(a.x,a.y);await page.mouse.down();await page.mouse.move(b.x,b.y,{steps:10});await page.waitForTimeout(80);
+  const pulled=await page.evaluate(()=>Math.max(...window.__ADUGAME_SCENE__().slimeBlob.points.map(p=>Math.hypot(p.x-p.bx,p.y-p.by))));expect(pulled).toBeGreaterThan(18);
+  await page.mouse.up();await page.waitForTimeout(900);
+  const relaxed=await page.evaluate(()=>Math.max(...window.__ADUGAME_SCENE__().slimeBlob.points.map(p=>Math.hypot(p.x-p.bx,p.y-p.by))));expect(relaxed).toBeLessThan(pulled);expect(errors).toEqual([]);
+});
+
+test('v5 wrong slime serve preserves craft state instead of resetting',async({page})=>{
+  const {rct}=await openRound(page,3,1);await mixBase(page,rct,210);await dragL(page,rct,[[400,485],[650,420]],300);await clickL(page,rct,870,630);await page.waitForTimeout(300);
+  const st=await page.evaluate(()=>window.__ADUGAME_DEBUG__());expect(st.roundComplete).toBe(false);expect(st.mixed).toBe(true);expect(st.chosen.color).toBe('blue');expect(st.chosen.decos).toContain('heart');
 });
 
 test('v5 all nine rounds boot without runtime errors',async({page})=>{
