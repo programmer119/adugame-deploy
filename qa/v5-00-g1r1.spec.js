@@ -10,36 +10,40 @@ async function dragL(page,r,pts,duration=240){
   for(let i=1;i<ps.length;i++){await page.mouse.move(ps[i].x,ps[i].y);await page.waitForTimeout(pause);}
   await page.mouse.up();
 }
+async function waitFor(page,fn,timeout=4000){return page.waitForFunction(fn,null,{timeout});}
 async function state(page,label){const s=await page.evaluate(()=>window.__ADUGAME_DEBUG__());console.log('V5_G1R1_STATE',label,JSON.stringify(s));return s;}
 
 test('v5 G1R1 exact state chain',async({page})=>{
   await page.goto('/index.html?game=1&round=1&e2e=1',{waitUntil:'networkidle'});
-  await page.waitForFunction(()=>window.__ADUGAME_DEBUG__?.()?.benchmarkV5==='toilet-handwash');
+  await waitFor(page,()=>window.__ADUGAME_DEBUG__?.()?.benchmarkV5==='toilet-handwash');
   const r=await rect(page);
 
   await clickL(page,r,740,380);
-  await page.waitForFunction(()=>window.__ADUGAME_DEBUG__()?.step===0.5);
+  await waitFor(page,()=>window.__ADUGAME_DEBUG__()?.step===0.5);
   expect((await state(page,'toilet')).step).toBe(.5);
 
   await clickL(page,r,790,275);
-  await page.waitForFunction(()=>window.__ADUGAME_DEBUG__()?.step===1);
+  await waitFor(page,()=>window.__ADUGAME_DEBUG__()?.step===1);
   expect((await state(page,'flush')).step).toBe(1);
 
   await clickL(page,r,400,300);
-  await page.waitForFunction(()=>window.__ADUGAME_DEBUG__()?.step===2,{timeout:3000});
+  await waitFor(page,()=>window.__ADUGAME_DEBUG__()?.step===2,3000);
   expect((await state(page,'wet')).step).toBe(2);
 
   await dragL(page,r,[[175,430],[400,475]],180);
-  await page.waitForFunction(()=>window.__ADUGAME_DEBUG__()?.step===3,{timeout:3000});
+  await waitFor(page,()=>window.__ADUGAME_DEBUG__()?.step===3,3000);
   expect((await state(page,'soap')).step).toBe(3);
 
-  // Five 80px passes remain inside the hands zone and exceed the 340px threshold.
-  await dragL(page,r,[[330,475],[410,475],[330,475],[410,475],[330,475],[410,475]],520);
-  await page.waitForFunction(()=>window.__ADUGAME_DEBUG__()?.step===4,{timeout:3000});
+  // The first pointermove initializes the previous point. Six 80px moves after that
+  // guarantee at least five counted passes = 400px, above the 340px threshold.
+  await dragL(page,r,[[330,475],[410,475],[330,475],[410,475],[330,475],[410,475],[330,475]],620);
+  const scrubNow=await state(page,'scrub-immediate');
+  expect(scrubNow.scrubDistance).toBeGreaterThanOrEqual(340);
+  await waitFor(page,()=>window.__ADUGAME_DEBUG__()?.step===4,3000);
   const scrub=await state(page,'scrub');
-  expect(scrub.scrubDistance).toBeGreaterThanOrEqual(340);
+  expect(scrub.step).toBe(4);
 
   await clickL(page,r,400,300);
-  await page.waitForFunction(()=>window.__ADUGAME_DEBUG__()?.roundComplete===true,{timeout:3000});
+  await waitFor(page,()=>window.__ADUGAME_DEBUG__()?.roundComplete===true,3000);
   expect((await state(page,'rinse')).roundComplete).toBe(true);
 });
