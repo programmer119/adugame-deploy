@@ -33,7 +33,7 @@ test('G1R3 stacked meal items do not keep inventory labels on the plate', async(
   await dragPath(page,r,[[650,630],[690,550],[730,470]],8);
   await page.waitForFunction(()=>window.__ADUGAME_DEBUG__()?.step===3);
   await dragPath(page,r,[[820,625],[820,570],[780,510],[730,450]],8);
-  await page.waitForTimeout(230);
+  await page.waitForFunction(()=>window.__ADUGAME_SCENE__()?.stack?.length>=1,{timeout:5000});
   const visibleLabels=await page.evaluate(()=>{
     const s=window.__ADUGAME_SCENE__();
     const bread=s.foods.find(o=>o.kind==='bread');
@@ -50,6 +50,9 @@ test('G2R1 assembled sandwich hides source labels while keeping ingredients visi
     [[740,620],[730,560],[710,500]],
     [[860,620],[780,560],[710,500]]
   ]){await dragPath(page,r,q,8);await page.waitForTimeout(210);}
+  // addToStack is intentionally committed at the end of the 160ms snap tween.
+  // Wait on the semantic state instead of assuming CI animation frames finish within a fixed sleep.
+  await page.waitForFunction(()=>window.__ADUGAME_SCENE__()?.stack?.length===3,{timeout:5000});
   const state=await page.evaluate(()=>{
     const s=window.__ADUGAME_SCENE__();
     return s.stack.map(o=>({kind:o.kind,visible:o.visible,visibleTexts:o.list.filter(c=>c.type==='Text'&&c.visible).map(c=>c.text)}));
