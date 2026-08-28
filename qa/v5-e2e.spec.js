@@ -23,18 +23,27 @@ async function expectComplete(page,errors){
   const st=await page.evaluate(()=>window.__ADUGAME_DEBUG__());expect(st.roundComplete).toBe(true);expect(errors).toEqual([]);return st;
 }
 async function mixBase(p,r,colorX){
-  await dragL(p,r,[[230,230],[650,420]],160);await dragL(p,r,[[360,230],[650,420]],160);await p.waitForTimeout(180);
-  await clickL(p,r,colorX,355);await dragL(p,r,circle(650,420,90,3,4),1750);
-  await waitFor(p,()=>window.__ADUGAME_DEBUG__()?.mixed===true,6000);
+  const color=colorX===210?'blue':colorX===325?'green':'pink';
+  await dragL(p,r,[[230,230],[650,420]],180);
+  await waitFor(p,()=>window.__ADUGAME_DEBUG__()?.ingredients?.includes('base'),7000);
+  await dragL(p,r,[[360,230],[650,420]],180);
+  await waitFor(p,()=>window.__ADUGAME_DEBUG__()?.ingredients?.includes('activator'),7000);
+  await clickL(p,r,colorX,355);
+  await waitFor(p,c=>window.__ADUGAME_DEBUG__()?.chosen?.color===c,5000,color);
+  await dragL(p,r,circle(650,420,90,3.2,4),1900);
+  try{await waitFor(p,()=>window.__ADUGAME_DEBUG__()?.mixed===true,7000);}catch(e){console.log('V5_MIX_FAIL',JSON.stringify(await p.evaluate(()=>window.__ADUGAME_DEBUG__?.())));throw e;}
 }
 async function craftOrder(p,r,{colorX,decoX,containerX=null,extraX=null},served){
   await mixBase(p,r,colorX);
-  await dragL(p,r,[[decoX,485],[650,420]],170);
-  if(extraX!==null)await dragL(p,r,[[extraX,485],[690,440]],170);
+  await dragL(p,r,[[decoX,485],[650,420]],190);
+  if(extraX!==null)await dragL(p,r,[[extraX,485],[690,440]],190);
   if(containerX!==null)await clickL(p,r,containerX,585);
   await clickL(p,r,870,630);
-  await waitFor(p,n=>window.__ADUGAME_DEBUG__()?.ordersServed>=n||window.__ADUGAME_DEBUG__()?.roundComplete===true,7000,served);
-  await p.waitForTimeout(160);
+  await waitFor(p,n=>window.__ADUGAME_DEBUG__()?.ordersServed>=n||window.__ADUGAME_DEBUG__()?.roundComplete===true,9000,served);
+  const done=await p.evaluate(()=>window.__ADUGAME_DEBUG__()?.roundComplete===true);
+  if(!done){
+    await waitFor(p,n=>{const s=window.__ADUGAME_DEBUG__(),sc=window.__ADUGAME_SCENE__();return s.orderIndex===n&&s.ingredients.length===0&&!s.mixed&&!sc.interactionLocked&&!!sc.mixZone?.input?.enabled;},7000,served);
+  }
 }
 
 const cases=[
