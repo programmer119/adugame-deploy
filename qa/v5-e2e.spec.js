@@ -11,17 +11,21 @@ async function dragL(page,r,points,duration=240){
   await page.mouse.up();
 }
 function circle(cx,cy,r,turns=3,steps=4,start=-Math.PI/2){const pts=[];for(let i=0;i<=turns*steps;i++){const a=start+2*Math.PI*i/steps;pts.push([cx+Math.cos(a)*r,cy+Math.sin(a)*r]);}return pts;}
+async function waitFor(page,fn,timeout=12000,arg=null){return page.waitForFunction(fn,arg,{timeout});}
 async function openRound(page,g,r){
   const errors=[]; page.on('pageerror',e=>errors.push(String(e))); page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.goto(`/index.html?game=${g}&round=${r}&e2e=1`,{waitUntil:'networkidle'});
-  await page.waitForFunction(()=>window.__ADUGAME_DEBUG__ && window.__ADUGAME_DEBUG__()?.key);
+  await waitFor(page,()=>window.__ADUGAME_DEBUG__ && window.__ADUGAME_DEBUG__()?.key);
   const rct=await rect(page); expect(rct).toBeTruthy(); return {rct,errors};
 }
-async function expectComplete(page,errors){await page.waitForFunction(()=>window.__ADUGAME_DEBUG__()?.roundComplete===true,{timeout:18000});const st=await page.evaluate(()=>window.__ADUGAME_DEBUG__());expect(st.roundComplete).toBe(true);expect(errors).toEqual([]);return st;}
+async function expectComplete(page,errors){
+  try{await waitFor(page,()=>window.__ADUGAME_DEBUG__()?.roundComplete===true,18000);}catch(e){console.log('V5_WAIT_FAIL',JSON.stringify(await page.evaluate(()=>window.__ADUGAME_DEBUG__?.())));throw e;}
+  const st=await page.evaluate(()=>window.__ADUGAME_DEBUG__());expect(st.roundComplete).toBe(true);expect(errors).toEqual([]);return st;
+}
 async function mixBase(p,r,colorX){
   await dragL(p,r,[[230,230],[650,420]],160);await dragL(p,r,[[360,230],[650,420]],160);await p.waitForTimeout(180);
   await clickL(p,r,colorX,355);await dragL(p,r,circle(650,420,90,3,4),1750);
-  await p.waitForFunction(()=>window.__ADUGAME_DEBUG__()?.mixed===true,{timeout:6000});
+  await waitFor(p,()=>window.__ADUGAME_DEBUG__()?.mixed===true,6000);
 }
 async function craftOrder(p,r,{colorX,decoX,containerX=null,extraX=null},served){
   await mixBase(p,r,colorX);
@@ -29,17 +33,18 @@ async function craftOrder(p,r,{colorX,decoX,containerX=null,extraX=null},served)
   if(extraX!==null)await dragL(p,r,[[extraX,485],[690,440]],170);
   if(containerX!==null)await clickL(p,r,containerX,585);
   await clickL(p,r,870,630);
-  await p.waitForFunction(n=>window.__ADUGAME_DEBUG__()?.ordersServed>=n||window.__ADUGAME_DEBUG__()?.roundComplete===true,served,{timeout:7000});
+  await waitFor(p,n=>window.__ADUGAME_DEBUG__()?.ordersServed>=n||window.__ADUGAME_DEBUG__()?.roundComplete===true,7000,served);
   await p.waitForTimeout(160);
 }
 
 const cases=[
   [1,1,async(p,r)=>{
-    await clickL(p,r,740,380); await clickL(p,r,790,275); await p.waitForTimeout(520);
-    await clickL(p,r,400,300); await p.waitForTimeout(520);
-    await dragL(p,r,[[175,430],[400,475]],180); await p.waitForTimeout(220);
-    await dragL(p,r,[[330,475],[410,475],[330,475],[410,475],[330,475],[410,475]],520);
-    await clickL(p,r,400,300); await p.waitForTimeout(560);
+    await clickL(p,r,740,380); await waitFor(p,()=>window.__ADUGAME_DEBUG__()?.step===0.5,4000);
+    await clickL(p,r,790,275); await waitFor(p,()=>window.__ADUGAME_DEBUG__()?.step===1,4000);
+    await clickL(p,r,400,300); await waitFor(p,()=>window.__ADUGAME_DEBUG__()?.step===2,4000);
+    await dragL(p,r,[[175,430],[400,475]],180); await waitFor(p,()=>window.__ADUGAME_DEBUG__()?.step===3,4000);
+    await dragL(p,r,[[330,475],[410,475],[330,475],[410,475],[330,475],[410,475],[330,475]],620); await waitFor(p,()=>window.__ADUGAME_DEBUG__()?.step===4,4000);
+    await clickL(p,r,400,300); await waitFor(p,()=>window.__ADUGAME_DEBUG__()?.roundComplete===true,4000);
   }],
   [1,2,async(p,r)=>{
     await dragL(p,r,[[205,235],[205,350]],160); await p.waitForTimeout(220);
@@ -81,7 +86,7 @@ for(const [g,r,play] of cases){
 }
 
 test('v5 guided habits expose routine identities',async({page})=>{
-  for(const [r,id] of [[1,'toilet-handwash'],[2,'brush-face-nails'],[3,'tidy-balanced-meal']]){await page.goto(`/index.html?game=1&round=${r}&e2e=1`,{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.__ADUGAME_DEBUG__?.()?.benchmarkV5);expect((await page.evaluate(()=>window.__ADUGAME_DEBUG__().benchmarkV5))).toBe(id);}
+  for(const [r,id] of [[1,'toilet-handwash'],[2,'brush-face-nails'],[3,'tidy-balanced-meal']]){await page.goto(`/index.html?game=1&round=${r}&e2e=1`,{waitUntil:'domcontentloaded'});await waitFor(page,()=>window.__ADUGAME_DEBUG__?.()?.benchmarkV5,5000);expect((await page.evaluate(()=>window.__ADUGAME_DEBUG__().benchmarkV5))).toBe(id);}
 });
 
 test('v5 house has four-floor transport semantics, 100 portable items, and 10 characters',async({page})=>{
@@ -113,6 +118,6 @@ test('v5 wrong slime serve preserves craft state instead of resetting',async({pa
 test('v5 all nine rounds boot without runtime errors',async({page})=>{
   for(let g=1;g<=3;g++)for(let r=1;r<=3;r++){
     const errs=[];page.removeAllListeners('pageerror');page.removeAllListeners('console');page.on('pageerror',e=>errs.push(String(e)));page.on('console',m=>{if(m.type()==='error')errs.push(m.text());});
-    await page.goto(`/index.html?game=${g}&round=${r}&e2e=1`,{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.__ADUGAME_DEBUG__ && window.__ADUGAME_DEBUG__()?.key);expect(errs).toEqual([]);const box=await page.locator('canvas').boundingBox();expect(box.width).toBeGreaterThan(600);expect(box.height).toBeGreaterThan(300);
+    await page.goto(`/index.html?game=${g}&round=${r}&e2e=1`,{waitUntil:'domcontentloaded'});await waitFor(page,()=>window.__ADUGAME_DEBUG__ && window.__ADUGAME_DEBUG__()?.key,5000);expect(errs).toEqual([]);const box=await page.locator('canvas').boundingBox();expect(box.width).toBeGreaterThan(600);expect(box.height).toBeGreaterThan(300);
   }
 });
