@@ -1,6 +1,6 @@
 // ADUGAME benchmark-v5 targeted fixes discovered by real Chromium QA.
 (() => {
-  window.__ADUGAME_V5_FIXES__={version:'5.0.1',loaded:true};
+  window.__ADUGAME_V5_FIXES__={version:'5.0.2',loaded:true};
 
   // G1R1: the room backdrop lives at depth 1. Several interactive fixtures from the
   // first v5 pass were left at depth 0, making the scene visually wrong even though
@@ -21,7 +21,13 @@
     // scrub gesture in hosted Chromium. Route the gesture at scene input level,
     // but accept distance only while the pointer is actually inside the hands zone.
     this.hands?.removeAllListeners('pointermove');
+    this.input.on('pointerdown',p=>{
+      if(this.step!==3)return;
+      const inside=Math.abs(p.x-400)<=115&&Math.abs(p.y-475)<=65;
+      this.lastScrub=inside?{x:p.x,y:p.y}:null;
+    });
     this.input.on('pointermove',p=>this.scrub(p));
+    this.input.on('pointerup',()=>{if(this.step===3)this.lastScrub=null;});
   };
 
   G1R1.prototype.scrub=function(p){
