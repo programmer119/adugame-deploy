@@ -36,8 +36,10 @@ test('strict command chain: G2 missions update target and progress at every acti
   test.setTimeout(150000);
   let r=await open(page,2,1);await expectGuide(page,'가족·친구',315,628);
   await dragL(page,r,[[315,628],[980,500]],190);await expectGuide(page,'빵',330,205);
-  await dragL(page,r,[[330,205],[690,330]],190);await waitFor(page,()=>window.__ADUGAME_DEBUG__().cooked===true);await expectGuide(page,'조리한 음식',690,330,10);
-  await dragL(page,r,[[690,330],[980,500]],190);await waitFor(page,()=>window.__ADUGAME_DEBUG__().milestone===true);await expectGuide(page,'완료 버튼',650,555);
+  await dragL(page,r,[[330,205],[690,330]],190);await waitFor(page,()=>window.__ADUGAME_DEBUG__().cooked===true);
+  const cooked=await page.evaluate(()=>{const s=window.__ADUGAME_SCENE__(),o=s.items.find(x=>x.kind==='bread'&&x.state==='cooked'&&x.visible);return o&&{x:o.x,y:o.y};});
+  expect(cooked).toBeTruthy();await expectGuide(page,'조리한 음식',cooked.x,cooked.y,3);
+  await dragL(page,r,[[cooked.x,cooked.y],[980,500]],190);await waitFor(page,()=>window.__ADUGAME_DEBUG__().milestone===true);await expectGuide(page,'완료 버튼',650,555);
 
   r=await open(page,2,2);await expectGuide(page,'세탁기 문',650,345);
   await clickL(page,r,650,345);await expectGuide(page,'(0/3)',330,205);
