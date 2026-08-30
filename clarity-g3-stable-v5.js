@@ -1,10 +1,11 @@
 // ADUGAME strict G3 stable guidance.
-// Re-evaluate the command after legacy snap/tween/container callbacks finish so the
-// visible instruction always points at the next action that can actually advance the order.
+// Re-evaluate commands after legacy callbacks and reject wrong order-color selection so
+// every visible instruction points at an action that can actually advance the order.
 (() => {
   if(typeof CraftRound==='undefined')return;
   const decoX={star:210,flower:305,heart:400,banana:495};
   const colorX={blue:210,green:325,pink:440};
+  const colorLabel={blue:'파랑',green:'초록',pink:'분홍'};
   const center=o=>o?{x:o.x,y:o.y}:null;
   function syncGuidance(s){
     if(!s?.scene?.isActive?.()||s.roundComplete)return;
@@ -13,9 +14,10 @@
       s.status?.setText(`${s.ingredients?.size?'이제 ':'먼저 '}베이스와 활성액을 그릇에 넣어요`);
       s.hintTarget=center(next);return;
     }
-    if(!s.chosen?.color){
-      s.status?.setText('주문과 같은 색을 골라요');
-      s.hintTarget={x:colorX[s.order?.color]||325,y:355};return;
+    if(s.chosen?.color!==s.order?.color){
+      const want=s.order?.color;
+      s.status?.setText(`주문은 ${colorLabel[want]||'표시된'} 색이에요. 주문 색을 선택해요`);
+      s.hintTarget={x:colorX[want]||325,y:355};return;
     }
     if(!s.mixed){
       s.status?.setText('그릇 안을 원을 그리며 충분히 섞어요');
@@ -42,11 +44,23 @@
     this.children.list.filter(o=>o?.name==='container_round'||o?.name==='container_square').forEach(o=>o.on('pointerup',()=>this.time.delayedCall(50,()=>syncGuidance(this))));
   };
 
+  const oldPickColor=CraftRound.prototype.pickColor;
+  CraftRound.prototype.pickColor=function(k,c,b){
+    if(this.ingredients?.size>=2&&k!==this.order?.color){
+      this.curious?.(b);
+      const want=this.order?.color;
+      this.status?.setText(`주문은 ${colorLabel[want]||'표시된'} 색이에요. 주문 색을 선택해요`);
+      this.hintTarget={x:colorX[want]||325,y:355};
+      return;
+    }
+    return oldPickColor.call(this,k,c,b);
+  };
+
   const oldDrop=CraftRound.prototype.dropDeco;
   CraftRound.prototype.dropDeco=function(o){
     const result=oldDrop.call(this,o);
     this.time.delayedCall(520,()=>syncGuidance(this));
     return result;
   };
-  window.__ADUGAME_CLARITY_G3_STABLE_V5__={loaded:true,version:'5.2.9',stableConditionChain:true,wrongContainerGuard:true};
+  window.__ADUGAME_CLARITY_G3_STABLE_V5__={loaded:true,version:'5.2.10',stableConditionChain:true,wrongContainerGuard:true,wrongColorGuard:true};
 })();
