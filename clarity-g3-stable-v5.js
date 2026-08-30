@@ -44,6 +44,15 @@
     this.children.list.filter(o=>o?.name==='container_round'||o?.name==='container_square').forEach(o=>o.on('pointerup',()=>this.time.delayedCall(50,()=>syncGuidance(this))));
   };
 
+  const oldDropIngredient=CraftRound.prototype.dropIngredient;
+  CraftRound.prototype.dropIngredient=function(o){
+    const result=oldDropIngredient.call(this,o);
+    // Run after the legacy 260ms snap/return callbacks so their ordering cannot leave
+    // the hint on an ingredient that is already in the bowl.
+    this.time.delayedCall(360,()=>syncGuidance(this));
+    return result;
+  };
+
   const oldPickColor=CraftRound.prototype.pickColor;
   CraftRound.prototype.pickColor=function(k,c,b){
     if(this.ingredients?.size>=2&&k!==this.order?.color){
@@ -71,5 +80,5 @@
     return result;
   };
 
-  window.__ADUGAME_CLARITY_G3_STABLE_V5__={loaded:true,version:'5.2.11',stableConditionChain:true,wrongContainerGuard:true,wrongColorGuard:true,failedServeRecovery:true};
+  window.__ADUGAME_CLARITY_G3_STABLE_V5__={loaded:true,version:'5.2.12',stableConditionChain:true,ingredientRaceGuard:true,wrongContainerGuard:true,wrongColorGuard:true,failedServeRecovery:true};
 })();
