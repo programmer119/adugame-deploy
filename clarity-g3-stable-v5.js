@@ -1,5 +1,5 @@
 // ADUGAME strict G3 stable guidance.
-// Re-evaluate commands after legacy callbacks and reject wrong order-color selection so
+// Re-evaluate commands after legacy callbacks and reject invalid order choices so
 // every visible instruction points at an action that can actually advance the order.
 (() => {
   if(typeof CraftRound==='undefined')return;
@@ -62,5 +62,14 @@
     this.time.delayedCall(520,()=>syncGuidance(this));
     return result;
   };
-  window.__ADUGAME_CLARITY_G3_STABLE_V5__={loaded:true,version:'5.2.10',stableConditionChain:true,wrongContainerGuard:true,wrongColorGuard:true};
+
+  const oldServe=CraftRound.prototype.serve;
+  CraftRound.prototype.serve=function(){
+    const valid=this.chosen?.color===this.order?.color&&this.chosen?.decos?.includes(this.order?.deco)&&(!this.order?.container||this.chosen?.container===this.order.container)&&this.mixed;
+    const result=oldServe.call(this);
+    if(!valid)this.time.delayedCall(60,()=>syncGuidance(this));
+    return result;
+  };
+
+  window.__ADUGAME_CLARITY_G3_STABLE_V5__={loaded:true,version:'5.2.11',stableConditionChain:true,wrongContainerGuard:true,wrongColorGuard:true,failedServeRecovery:true};
 })();
