@@ -12,7 +12,7 @@ concurrency:
 jobs:
   browser-e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,6 +24,8 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Static syntax gate
         run: npm run syntax
+      - name: V6 all-nine presentation gate
+        run: npx playwright test qa/v5-12-visual-quality-v6.spec.js
       - name: Full-cycle browser gate
         run: npm run test:e2e
       - name: Seven-category visual-flow gate
