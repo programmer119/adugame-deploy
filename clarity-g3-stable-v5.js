@@ -46,11 +46,18 @@
 
   const oldDropIngredient=CraftRound.prototype.dropIngredient;
   CraftRound.prototype.dropIngredient=function(o){
-    const result=oldDropIngredient.call(this,o);
-    // Run after the legacy 260ms snap/return callbacks so their ordering cannot leave
-    // the hint on an ingredient that is already in the bowl.
-    this.time.delayedCall(360,()=>syncGuidance(this));
-    return result;
+    // Decorate the exact snap completion callback used by the legacy implementation.
+    // This removes timing guesses: guidance is recalculated immediately after the
+    // ingredient is actually inserted into the Set, then once more after legacy
+    // return/snap callbacks settle.
+    const originalSnap=this.snap;
+    this.snap=(obj,x,y,cb,...rest)=>originalSnap.call(this,obj,x,y,(...args)=>{
+      const r=cb?.(...args);
+      syncGuidance(this);
+      this.time.delayedCall(320,()=>syncGuidance(this));
+      return r;
+    },...rest);
+    try{return oldDropIngredient.call(this,o);}finally{this.snap=originalSnap;}
   };
 
   const oldPickColor=CraftRound.prototype.pickColor;
@@ -80,5 +87,5 @@
     return result;
   };
 
-  window.__ADUGAME_CLARITY_G3_STABLE_V5__={loaded:true,version:'5.2.12',stableConditionChain:true,ingredientRaceGuard:true,wrongContainerGuard:true,wrongColorGuard:true,failedServeRecovery:true};
+  window.__ADUGAME_CLARITY_G3_STABLE_V5__={loaded:true,version:'5.2.13',stableConditionChain:true,ingredientSnapCallbackGuard:true,wrongContainerGuard:true,wrongColorGuard:true,failedServeRecovery:true};
 })();
