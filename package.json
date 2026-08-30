@@ -1,6 +1,6 @@
 {
   "name": "adugame-deploy-qa",
-  "version": "5.2.11-beta",
+  "version": "5.2.12-beta",
   "private": true,
   "description": "ADUGAME benchmark-v5 staging browser QA",
   "scripts": {
