@@ -3,7 +3,7 @@
 // and every instruction/hint points at the actual accepted target for that state.
 (() => {
   const ITEM_ICON={
-    wheel:'🛞',screw:'🔩',driver:'🪛',wrench:'🔧',hammer:'🔨',paint:'🎨',cloth:'🧽',pump:'💨',ball:'⚽',cone:'🚧',helmet:'⛑',rake:'🧹',shovel:'♠',hose:'🚿',plant:'🪴',wateringcan:'💧',picnic:'🧺',box:'📦',kite:'🪁',skateboard:'🛹',bucket:'🪣',brush:'🧹',oil:'🛢',sparewheel:'🛞',gloves:'🧤',
+    wheel:'🛞',screw:'🔩',driver:'🪛',wrench:'🔧',hammer:'🔨',paint:'🎨',cloth:'🧽',pump:'💨',ball:'⚽',cone:'🚧',helmet:'⛑',rake:'🧹',shovel:'🪏',hose:'🚿',plant:'🪴',wateringcan:'💧',picnic:'🧺',box:'📦',kite:'🪁',skateboard:'🛹',bucket:'🪣',brush:'🧹',oil:'🛢',sparewheel:'🛞',gloves:'🧤',
     bread:'🍞',cheese:'🧀',lettuce:'🥬',tomato:'🍅',apple:'🍎',banana:'🍌',carrot:'🥕',cup:'🥤',plate:'🍽',spoon:'🥄',pan:'🍳',pot:'🥘',towel:'🧻',book:'📕',cushion:'🛋',remote:'🎛',mug:'☕',cereal:'🥣',egg:'🥚',milk:'🥛',bowl:'🥣',fork:'🍴',knife:'🔪',napkin:'🧻',bottle:'🧴',
     shirt:'👕',pants:'👖',sock:'🧦',dress:'👗',soap:'🧼',detergent:'🧴',toothbrush:'🪥',toothpaste:'🧴',duck:'🦆',sponge:'🧽',basket:'🧺',hanger:'👚',shampoo:'🧴',comb:'🪮',toiletpaper:'🧻',slipper:'👟',robe:'🥋',toyboat:'⛵',hairdryer:'💨',washcloth:'🧽',
     blocks:'🧱',doll:'🪆',toycar:'🚗',pencil:'✏',paper:'📄',drum:'🥁',guitar:'🎸',train:'🚂',puzzle:'🧩',hat:'🧢',shoes:'👟',teddy:'🧸',snack:'🍪',pillow:'🛏',blanket:'🛌',robot:'🤖',cube:'◆',crayon:'🖍'
@@ -35,6 +35,8 @@
   });
   wrapHabit(G1R2,function(){
     [['brush','toothbrush','칫솔'],['paste','toothpaste','치약'],['cloth','cloth','세안천'],['clipper','clipper','손톱깎이']].forEach(([prop,kind,label])=>enhanceCard(this[prop],TOOL_ICON[kind],label));
+    // Keep the fourth tool fully inside the activity panel and away from the status line.
+    if(this.clipper){this.clipper.setY(545);this.clipper.home={x:this.clipper.x,y:545};}
   });
   wrapHabit(G1R3,function(){
     [...(this.toys||[]),...(this.foods||[])].forEach(c=>enhanceCard(c,TOOL_ICON[c.kind]||'◆',c.list?.filter(o=>o?.type==='Text')?.[1]?.text||c.kind));
@@ -47,8 +49,8 @@
     Klass.prototype.makeItem=function(kind,x,y,f,i){
       const c=originalMakeItem.call(this,kind,x,y,f,i),icon=ITEM_ICON[kind],label=ITEM_LABEL[kind]||kind;
       if(!icon)throw new Error(`missing pictogram for house item: ${kind}`);
-      const old=c.list?.find(o=>o?.type==='Text');if(old)old.setText(label.length>5?label.slice(0,5):label).setFontSize(8).setY(17);
-      const pic=this.add.text(0,-8,icon,{fontSize:'22px'}).setOrigin(.5);c.add(pic);c.visualIdentity='pictogram';c.semanticLabel=label;c.pictogram=icon;return c;
+      const old=c.list?.find(o=>o?.type==='Text');if(old)old.setText(label.length>5?label.slice(0,5):label).setFontSize(9).setY(17);
+      const pic=this.add.text(0,-8,icon,{fontSize:'25px'}).setOrigin(.5);c.add(pic);c.visualIdentity='pictogram';c.semanticLabel=label;c.pictogram=icon;return c;
     };
     const originalFixture=Klass.prototype.fixture;
     Klass.prototype.fixture=function(f,x,y,label,w,h,color){
@@ -65,22 +67,44 @@
   }
   [G2R1,G2R2,G2R3].forEach(patchHouse);
 
+  function renderOrderBadges(scene){
+    if(!scene.orderBubble)return;
+    scene.clarityOrderBadges?.destroy(true);scene.orderIcons?.setVisible(false);scene.orderLabel?.setText('주문 조건');
+    const colorInfo={blue:[COLORS.blue,'파랑'],green:[COLORS.green,'초록'],pink:[0xff8fab,'분홍']}[scene.order.color];
+    const decoInfo={star:['★','별'],flower:['✿','꽃'],heart:['♥','하트']}[scene.order.deco];
+    const conds=[];
+    if(colorInfo)conds.push({key:`color:${scene.order.color}`,kind:'color',value:colorInfo[0],label:colorInfo[1]});
+    if(decoInfo)conds.push({key:`deco:${scene.order.deco}`,kind:'deco',value:decoInfo[0],label:decoInfo[1]});
+    if(scene.order.container)conds.push({key:`container:${scene.order.container}`,kind:'container',value:scene.order.container,label:scene.order.container==='round'?'원형':'네모'});
+    const root=scene.add.container(0,12).setName('clarity_order_badges');
+    conds.forEach((c,i)=>{
+      const x=(i-(conds.length-1)/2)*86,badge=scene.add.container(x,0).setName(`order_badge_${c.key}`),bg=scene.add.graphics();
+      bg.fillStyle(0xf7f9fc,1).fillRoundedRect(-36,-31,72,62,12);bg.lineStyle(2,COLORS.ink,.12).strokeRoundedRect(-36,-31,72,62,12);badge.add(bg);
+      if(c.kind==='color'){const g=scene.add.graphics();g.fillStyle(c.value,1).fillCircle(0,-7,15);g.lineStyle(2,COLORS.ink,.18).strokeCircle(0,-7,15);badge.add(g);}
+      if(c.kind==='deco')badge.add(scene.add.text(0,-8,c.value,{fontFamily:'Arial',fontSize:'25px',fontStyle:'bold',color:c.value==='♥'?'#ff6b8a':'#6c63ff'}).setOrigin(.5));
+      if(c.kind==='container'){const g=scene.add.graphics();g.lineStyle(4,0x607086,1);if(c.value==='round')g.strokeEllipse(0,-7,31,23);else g.strokeRoundedRect(-15,-19,30,24,4);badge.add(g);}
+      badge.add(scene.add.text(0,20,c.label,{fontFamily:'Arial',fontSize:'10px',fontStyle:'bold',color:'#607086'}).setOrigin(.5));root.add(badge);
+    });
+    scene.orderBubble.add(root);scene.clarityOrderBadges=root;scene.clarityOrderConditionKeys=conds.map(c=>c.key);
+  }
+
   CraftRound.prototype.orderText=function(){
     const color={blue:'🔵',green:'🟢',pink:'🩷'}[this.order.color]||'',deco={star:'★',flower:'✿',heart:'♥'}[this.order.deco]||'',container=this.order.container==='round'?'  ◯':this.order.container==='square'?'  ▢':'';
     return `${color}  ${deco}${container}`;
   };
+  CraftRound.prototype.renderClarityOrderBadges=function(){renderOrderBadges(this);};
   const originalCraftCreate=CraftRound.prototype.create;
   CraftRound.prototype.create=function(){
     originalCraftCreate.call(this);
     const relabel=(c,text,icon)=>{if(!c)return;const t=c.list?.find(o=>o?.type==='Text');if(t)t.setText(`${icon}\n${text}`).setAlign('center').setFontSize('12px');c.visualIdentity='pictogram';c.semanticLabel=text;c.pictogram=icon;};
     relabel(this.base,'베이스','🧴');relabel(this.activator,'활성액','💧');
-    this.orderLabel?.setText('주문');this.serveButton?.setText('손님에게 주기');
+    this.serveButton?.setText('손님에게 주기');
     this.status?.setText('베이스와 활성액을 그릇에 넣고 주문 색을 고른 뒤 섞어요');
     if(this.base)this.hintTarget={x:this.base.x,y:this.base.y};
     this.children.list.filter(o=>o?.name==='container_round'||o?.name==='container_square').forEach(o=>o.on('pointerup',()=>{
       if(this.chosen.container===o.name.replace('container_','')){this.status.setText('주문 조건을 모두 맞췄어요. 손님에게 주기를 눌러요');this.hintTarget={x:this.serveButton.x,y:this.serveButton.y};}
     }));
-    this.orderIcons?.setText(this.orderText());
+    renderOrderBadges(this);
   };
   const originalCompleteMix=CraftRound.prototype.completeMix;
   CraftRound.prototype.completeMix=function(){
@@ -97,7 +121,7 @@
     return result;
   };
   const originalNext=CraftRound.prototype.prepareNextOrder;
-  CraftRound.prototype.prepareNextOrder=function(){const result=originalNext.call(this);this.orderIcons?.setText(this.orderText());this.status?.setText('다음 손님이에요. 베이스와 활성액부터 다시 넣어요');if(this.base)this.hintTarget={x:this.base.x,y:this.base.y};return result;};
+  CraftRound.prototype.prepareNextOrder=function(){const result=originalNext.call(this);this.status?.setText('다음 손님이에요. 베이스와 활성액부터 다시 넣어요');if(this.base)this.hintTarget={x:this.base.x,y:this.base.y};renderOrderBadges(this);return result;};
 
-  window.__ADUGAME_CLARITY_V5__={loaded:true,version:'5.1.1',houseIcons:Object.keys(ITEM_ICON).length,strictCommandMapping:true};
+  window.__ADUGAME_CLARITY_V5__={loaded:true,version:'5.2.0',houseIcons:Object.keys(ITEM_ICON).length,strictCommandMapping:true,orderBadges:true};
 })();
