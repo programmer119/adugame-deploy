@@ -11,7 +11,7 @@ async function sceneAudit(page){return page.evaluate(()=>{
   const walk=(o,parentVisible=true,parentAlpha=1)=>{if(!o)return;const alpha=Number.isFinite(Number(o.alpha))?Number(o.alpha):1;const visible=parentVisible&&o.visible!==false&&parentAlpha*alpha>.02;let b=null;try{b=o.getBounds?.();}catch(_){}const bounds=b&&Number.isFinite(b.x)?{x:b.x,y:b.y,w:b.width,h:b.height}:null;all.push({id:id++,name:o.name||'',kind:o.kind||'',type:o.type||o.constructor?.name||'',text:o.type==='Text'?String(o.text||''):'',visible,interactive:!!o.input?.enabled,bounds,visualIdentity:o.visualIdentity||'',semanticLabel:o.semanticLabel||'',pictogram:o.pictogram||''});if(Array.isArray(o.list))o.list.forEach(c=>walk(c,visible,parentAlpha*alpha));};
   s.children.list.forEach(o=>walk(o));
   const ht=s.hintTarget?{x:s.hintTarget.x,y:s.hintTarget.y}:null;
-  return {key:s.debugState?.().key,status:String(s.status?.text||''),hintTarget:ht,nodes:all,clarity:window.__ADUGAME_CLARITY_V5__||null};
+  return {key:s.debugState?.().key,status:String(s.status?.text||''),hintTarget:ht,nodes:all,clarity:window.__ADUGAME_CLARITY_V5__||null,orderConditions:s.clarityOrderConditionKeys||[]};
 });}
 function contains(b,p,pad=2){return !!b&&p.x>=b.x-pad&&p.x<=b.x+b.w+pad&&p.y>=b.y-pad&&p.y<=b.y+b.h+pad;}
 
@@ -26,11 +26,11 @@ test('strict clarity: all nine rounds keep actionable controls and instruction t
 });
 
 // 2) daily-habit tools must carry pictograms, not English code words as the primary visual identity.
-test('strict clarity: G1 required tools are pictogram-identifiable',async({page})=>{
+test('strict clarity: G1 required tools are pictogram-identifiable and stay inside activity panel',async({page})=>{
   await open(page,1,1);let s=await page.evaluate(()=>{const x=window.__ADUGAME_SCENE__();return {soap:[x.soap.visualIdentity,x.soap.semanticLabel,x.soap.pictogram],flush:[x.flush.visualIdentity,x.flush.semanticLabel,x.flush.text]};});
   expect(s.soap).toEqual(['pictogram','비누','🧼']);expect(s.flush[0]).toBe('pictogram');expect(s.flush[1]).toBe('물내림');expect(s.flush[2]).not.toBe('●');
-  await open(page,1,2);s=await page.evaluate(()=>{const x=window.__ADUGAME_SCENE__();return [x.brush,x.paste,x.cloth,x.clipper].map(o=>({kind:o.kind,identity:o.visualIdentity,label:o.semanticLabel,p:o.pictogram}));});
-  expect(s.every(o=>o.identity==='pictogram'&&o.label&&o.p&&!/^(BRUSH|PASTE|CLOTH|CLIP)$/.test(o.p))).toBe(true);
+  await open(page,1,2);s=await page.evaluate(()=>{const x=window.__ADUGAME_SCENE__();const b=x.clipper.getBounds();return {tools:[x.brush,x.paste,x.cloth,x.clipper].map(o=>({kind:o.kind,identity:o.visualIdentity,label:o.semanticLabel,p:o.pictogram})),clipperBounds:{x:b.x,y:b.y,w:b.width,h:b.height}};});
+  expect(s.tools.every(o=>o.identity==='pictogram'&&o.label&&o.p&&!/^(BRUSH|PASTE|CLOTH|CLIP)$/.test(o.p))).toBe(true);expect(s.clipperBounds.y+s.clipperBounds.h).toBeLessThanOrEqual(592);
   await open(page,1,3);s=await page.evaluate(()=>{const x=window.__ADUGAME_SCENE__();return [...x.toys,...x.foods].map(o=>({kind:o.kind,identity:o.visualIdentity,label:o.semanticLabel,p:o.pictogram}));});
   expect(s).toHaveLength(8);expect(s.every(o=>o.identity==='pictogram'&&o.label&&o.p)).toBe(true);
 });
@@ -43,12 +43,12 @@ test('strict clarity: G2 all portable items and fixtures are pictogram-identifia
   const badFixtures=s.fixtures.filter(o=>o.identity!=='pictogram'||!o.label||!o.p);expect(badFixtures,JSON.stringify(badFixtures)).toEqual([]);
 });
 
-// 4) the strictest command-target chain: order icon -> requested decoration -> requested container -> serve.
-test('strict clarity: G3 order, hint and accepted target stay exactly aligned',async({page})=>{
+// 4) the strictest command-target chain: visible condition badges -> requested decoration -> requested container -> serve.
+test('strict clarity: G3 visible order conditions, hint and accepted target stay exactly aligned',async({page})=>{
   const r=await open(page,3,2);let a=await sceneAudit(page);
-  expect(a.status).toContain('베이스');expect(a.status).toContain('활성액');
-  let labels=await page.evaluate(()=>{const s=window.__ADUGAME_SCENE__();const txt=o=>o.list?.filter(x=>x?.type==='Text').map(x=>x.text).join(' ');return {base:txt(s.base),act:txt(s.activator),order:s.orderLabel.text,serve:s.serveButton.text,orderIcons:s.orderIcons.text};});
-  expect(labels.base).toContain('베이스');expect(labels.act).toContain('활성액');expect(labels.order).toBe('주문');expect(labels.serve).toBe('손님에게 주기');expect(labels.orderIcons).toContain('◯');
+  expect(a.status).toContain('베이스');expect(a.status).toContain('활성액');expect(a.orderConditions).toEqual(['color:green','deco:flower','container:round']);
+  let labels=await page.evaluate(()=>{const s=window.__ADUGAME_SCENE__();const txt=o=>o.list?.filter(x=>x?.type==='Text').map(x=>x.text).join(' ');return {base:txt(s.base),act:txt(s.activator),order:s.orderLabel.text,serve:s.serveButton.text,badgesVisible:!!s.clarityOrderBadges?.visible,badgeCount:s.clarityOrderBadges?.list?.length||0,oldOrderVisible:s.orderIcons.visible};});
+  expect(labels.base).toContain('베이스');expect(labels.act).toContain('활성액');expect(labels.order).toBe('주문 조건');expect(labels.serve).toBe('손님에게 주기');expect(labels.badgesVisible).toBe(true);expect(labels.badgeCount).toBe(3);expect(labels.oldOrderVisible).toBe(false);
 
   await dragL(page,r,[[230,230],[650,420]],180);await waitFor(page,()=>window.__ADUGAME_DEBUG__().ingredients.includes('base'));
   await dragL(page,r,[[360,230],[650,420]],180);await waitFor(page,()=>window.__ADUGAME_DEBUG__().ingredients.includes('activator'));
@@ -60,7 +60,7 @@ test('strict clarity: G3 order, hint and accepted target stay exactly aligned',a
   a=await sceneAudit(page);expect(a.status).toContain('동그란');let round=a.nodes.find(n=>n.name==='container_round'&&n.visible&&n.interactive);expect(round).toBeTruthy();expect(contains(round.bounds,a.hintTarget)).toBe(true);
   await clickL(page,r,230,585);await page.waitForTimeout(100);a=await sceneAudit(page);expect(a.status).toContain('손님에게 주기');let serve=a.nodes.find(n=>n.type==='Text'&&n.text==='손님에게 주기'&&n.visible&&n.interactive);expect(serve).toBeTruthy();expect(contains(serve.bounds,a.hintTarget)).toBe(true);
 
-  // Explicitly probe the second R2 order: square must render square, never circle.
-  const probe=await page.evaluate(()=>{const s=window.__ADUGAME_SCENE__(),old=s.order;s.order={color:'blue',deco:'star',container:'square'};const t=s.orderText();s.order=old;return t;});
-  expect(probe).toContain('▢');expect(probe).not.toContain('◯');
+  // Explicitly probe the second R2 order: the visible condition model must switch to square.
+  const probe=await page.evaluate(()=>{const s=window.__ADUGAME_SCENE__(),old=s.order;s.order={color:'blue',deco:'star',container:'square'};s.renderClarityOrderBadges();const keys=[...s.clarityOrderConditionKeys];const n=s.clarityOrderBadges.list.map(o=>o.name);s.order=old;s.renderClarityOrderBadges();return {keys,n};});
+  expect(probe.keys).toEqual(['color:blue','deco:star','container:square']);expect(probe.n.some(x=>x==='order_badge_container:square')).toBe(true);expect(probe.n.some(x=>x==='order_badge_container:round')).toBe(false);
 });
