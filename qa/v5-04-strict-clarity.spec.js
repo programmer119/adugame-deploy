@@ -8,9 +8,18 @@ async function waitFor(page,fn,timeout=10000,arg=null){return page.waitForFuncti
 async function open(page,g,r){await page.goto(`/index.html?game=${g}&round=${r}&e2e=1`,{waitUntil:'networkidle'});await waitFor(page,()=>window.__ADUGAME_DEBUG__?.()?.key);const box=await page.locator('canvas').boundingBox();expect(box).toBeTruthy();return box;}
 async function sceneAudit(page){return page.evaluate(()=>{
   const s=window.__ADUGAME_SCENE__();const all=[];let id=0;
-  const walk=(o,parentVisible=true,parentAlpha=1)=>{if(!o)return;const alpha=Number.isFinite(Number(o.alpha))?Number(o.alpha):1;const visible=parentVisible&&o.visible!==false&&parentAlpha*alpha>.02;let b=null;try{b=o.getBounds?.();}catch(_){}const bounds=b&&Number.isFinite(b.x)?{x:b.x,y:b.y,w:b.width,h:b.height}:null;all.push({id:id++,name:o.name||'',kind:o.kind||'',type:o.type||o.constructor?.name||'',text:o.type==='Text'?String(o.text||''):'',visible,interactive:!!o.input?.enabled,bounds,visualIdentity:o.visualIdentity||'',semanticLabel:o.semanticLabel||'',pictogram:o.pictogram||''});if(Array.isArray(o.list))o.list.forEach(c=>walk(c,visible,parentAlpha*alpha));};
-  s.children.list.forEach(o=>walk(o));
   const ht=s.hintTarget?{x:s.hintTarget.x,y:s.hintTarget.y}:null;
+  const accepts=(o,p)=>{
+    if(!p||!o?.input?.enabled||!o.input.hitArea||typeof o.input.hitAreaCallback!=='function')return false;
+    try{
+      const m=o.getWorldTransformMatrix?.();
+      if(!m)return false;
+      const local=new Phaser.Math.Vector2();m.applyInverse(p.x,p.y,local);
+      return !!o.input.hitAreaCallback(o.input.hitArea,local.x,local.y,o);
+    }catch(_){return false;}
+  };
+  const walk=(o,parentVisible=true,parentAlpha=1)=>{if(!o)return;const alpha=Number.isFinite(Number(o.alpha))?Number(o.alpha):1;const visible=parentVisible&&o.visible!==false&&parentAlpha*alpha>.02;let b=null;try{b=o.getBounds?.();}catch(_){}const bounds=b&&Number.isFinite(b.x)?{x:b.x,y:b.y,w:b.width,h:b.height}:null;all.push({id:id++,name:o.name||'',kind:o.kind||'',type:o.type||o.constructor?.name||'',text:o.type==='Text'?String(o.text||''):'',visible,interactive:!!o.input?.enabled,bounds,acceptsHint:visible&&accepts(o,ht),visualIdentity:o.visualIdentity||'',semanticLabel:o.semanticLabel||'',pictogram:o.pictogram||''});if(Array.isArray(o.list))o.list.forEach(c=>walk(c,visible,parentAlpha*alpha));};
+  s.children.list.forEach(o=>walk(o));
   return {key:s.debugState?.().key,status:String(s.status?.text||''),hintTarget:ht,nodes:all,clarity:window.__ADUGAME_CLARITY_V5__||null,orderConditions:s.clarityOrderConditionKeys||[]};
 });}
 function contains(b,p,pad=2){return !!b&&p.x>=b.x-pad&&p.x<=b.x+b.w+pad&&p.y>=b.y-pad&&p.y<=b.y+b.h+pad;}
@@ -21,7 +30,7 @@ test('strict clarity: all nine rounds keep actionable controls and instruction t
     await open(page,g,r);const a=await sceneAudit(page);expect(a.clarity?.loaded).toBe(true);
     const bad=a.nodes.filter(n=>n.visible&&n.bounds&&(n.interactive||n.type==='Text')&&(n.bounds.x<-3||n.bounds.y<-3||n.bounds.x+n.bounds.w>1283||n.bounds.y+n.bounds.h>723));
     expect(bad,`G${g}R${r} clipped nodes: ${JSON.stringify(bad)}`).toEqual([]);
-    if(a.hintTarget){const hits=a.nodes.filter(n=>n.visible&&n.interactive&&contains(n.bounds,a.hintTarget));expect(hits.length,`G${g}R${r} hint ${JSON.stringify(a.hintTarget)} must land on an enabled target; status=${a.status}`).toBeGreaterThan(0);}
+    if(a.hintTarget){const hits=a.nodes.filter(n=>n.acceptsHint);expect(hits.length,`G${g}R${r} hint ${JSON.stringify(a.hintTarget)} must land inside an enabled Phaser hitArea; status=${a.status}; interactive=${JSON.stringify(a.nodes.filter(n=>n.visible&&n.interactive).map(n=>({name:n.name,kind:n.kind,type:n.type,bounds:n.bounds})))}`).toBeGreaterThan(0);}
   }
 });
 
@@ -54,11 +63,11 @@ test('strict clarity: G3 visible order conditions, hint and accepted target stay
   await dragL(page,r,[[360,230],[650,420]],180);await waitFor(page,()=>window.__ADUGAME_DEBUG__().ingredients.includes('activator'));
   await clickL(page,r,325,355);await waitFor(page,()=>window.__ADUGAME_DEBUG__().chosen.color==='green');
   await dragL(page,r,circle(650,420,90),1900);await waitFor(page,()=>window.__ADUGAME_DEBUG__().mixed===true);
-  a=await sceneAudit(page);let flower=a.nodes.find(n=>n.name==='deco_flower'&&n.visible&&n.interactive);expect(flower).toBeTruthy();expect(contains(flower.bounds,a.hintTarget),`mixed hint=${JSON.stringify(a.hintTarget)} flower=${JSON.stringify(flower.bounds)}`).toBe(true);
+  a=await sceneAudit(page);let flower=a.nodes.find(n=>n.name==='deco_flower'&&n.visible&&n.interactive);expect(flower).toBeTruthy();expect(flower.acceptsHint,`mixed hint=${JSON.stringify(a.hintTarget)} flower=${JSON.stringify(flower.bounds)}`).toBe(true);
 
   await dragL(page,r,[[305,485],[650,420]],220);await waitFor(page,()=>window.__ADUGAME_DEBUG__().chosen.decos.includes('flower'));await page.waitForTimeout(300);
-  a=await sceneAudit(page);expect(a.status).toContain('동그란');let round=a.nodes.find(n=>n.name==='container_round'&&n.visible&&n.interactive);expect(round).toBeTruthy();expect(contains(round.bounds,a.hintTarget)).toBe(true);
-  await clickL(page,r,230,585);await page.waitForTimeout(100);a=await sceneAudit(page);expect(a.status).toContain('손님에게 주기');let serve=a.nodes.find(n=>n.type==='Text'&&n.text==='손님에게 주기'&&n.visible&&n.interactive);expect(serve).toBeTruthy();expect(contains(serve.bounds,a.hintTarget)).toBe(true);
+  a=await sceneAudit(page);expect(a.status).toContain('동그란');let round=a.nodes.find(n=>n.name==='container_round'&&n.visible&&n.interactive);expect(round).toBeTruthy();expect(round.acceptsHint).toBe(true);
+  await clickL(page,r,230,585);await page.waitForTimeout(100);a=await sceneAudit(page);expect(a.status).toContain('손님에게 주기');let serve=a.nodes.find(n=>n.type==='Text'&&n.text==='손님에게 주기'&&n.visible&&n.interactive);expect(serve).toBeTruthy();expect(serve.acceptsHint).toBe(true);
 
   // Explicitly probe the second R2 order: the visible condition model must switch to square.
   const probe=await page.evaluate(()=>{const s=window.__ADUGAME_SCENE__(),old=s.order;s.order={color:'blue',deco:'star',container:'square'};s.renderClarityOrderBadges();const keys=[...s.clarityOrderConditionKeys];const n=s.clarityOrderBadges.list.map(o=>o.name);s.order=old;s.renderClarityOrderBadges();return {keys,n};});
