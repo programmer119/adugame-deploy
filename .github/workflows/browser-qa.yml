@@ -25,7 +25,7 @@ jobs:
       - name: Static syntax gate
         run: npm run syntax
       - name: V6 all-nine presentation gate
-        run: npx playwright test qa/v5-12-visual-quality-v6.spec.js qa/v5-13-visual-truth-v6.spec.js
+        run: npx playwright test qa/v5-12-visual-quality-v6.spec.js qa/v5-13-visual-truth-v6.spec.js qa/v5-14-house-dynamic-visual-v6.spec.js
       - name: Full-cycle browser gate
         run: npm run test:e2e
       - name: Seven-category visual-flow gate
