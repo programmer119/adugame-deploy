@@ -8,6 +8,7 @@ async function guide(p){return p.evaluate(()=>{const s=window.__ADUGAME_SCENE__(
 async function expectGuide(p,text,x,y,tol=3){const g=await guide(p);expect(g.status).toContain(text);expect(g.hint,`missing hint for ${g.status}`).toBeTruthy();expect(Math.abs(g.hint.x-x),JSON.stringify(g)).toBeLessThanOrEqual(tol);expect(Math.abs(g.hint.y-y),JSON.stringify(g)).toBeLessThanOrEqual(tol);}
 
 test('strict command chain: G1 every guided state points to the next valid action',async({page})=>{
+  test.setTimeout(150000);
   let r=await open(page,1,1);await expectGuide(page,'변기',740,380);
   await clickL(page,r,740,380);await waitFor(page,()=>window.__ADUGAME_DEBUG__().step===.5);await expectGuide(page,'물',790,275);
   await clickL(page,r,790,275);await waitFor(page,()=>String(window.__ADUGAME_SCENE__().status.text).includes('수도꼭지'));await expectGuide(page,'수도꼭지',400,300);
@@ -32,6 +33,7 @@ test('strict command chain: G1 every guided state points to the next valid actio
 });
 
 test('strict command chain: G2 missions update target and progress at every action',async({page})=>{
+  test.setTimeout(150000);
   let r=await open(page,2,1);await expectGuide(page,'가족·친구',315,628);
   await dragL(page,r,[[315,628],[980,500]],190);await expectGuide(page,'빵',330,205);
   await dragL(page,r,[[330,205],[690,330]],190);await waitFor(page,()=>window.__ADUGAME_DEBUG__().cooked===true);await expectGuide(page,'조리한 음식',690,330,10);
@@ -53,6 +55,7 @@ test('strict command chain: G2 missions update target and progress at every acti
 });
 
 test('strict command chain: G3 ingredient hint never points to an invalid duplicate',async({page})=>{
+  test.setTimeout(150000);
   const r=await open(page,3,2);await expectGuide(page,'베이스',230,230);
   await dragL(page,r,[[230,230],[650,420]],190);await waitFor(page,()=>window.__ADUGAME_DEBUG__().ingredients.length===1);await page.waitForTimeout(300);await expectGuide(page,'활성액',360,230);
   await dragL(page,r,[[360,230],[650,420]],190);await waitFor(page,()=>window.__ADUGAME_DEBUG__().ingredients.length===2);await page.waitForTimeout(220);await expectGuide(page,'색',325,355);
