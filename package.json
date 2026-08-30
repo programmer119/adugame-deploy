@@ -1,11 +1,11 @@
 {
   "name": "adugame-deploy-qa",
-  "version": "5.2.5-beta",
+  "version": "5.2.6-beta",
   "private": true,
   "description": "ADUGAME benchmark-v5 staging browser QA",
   "scripts": {
     "serve": "python -m http.server 4173 -d .",
-    "syntax": "node --check core.js && node --check game1.js && node --check game2.js && node --check game3.js && node --check gameplay-patches.js && node --check parity-fixes.js && node --check parity-v3.js && node --check parity-v4.js && node --check habit-v5.js && node --check house-v5.js && node --check house-v5-fixes.js && node --check house-v5-wash-fix.js && node --check slime-v5.js && node --check slime-tactile-fix.js && node --check slime-economy-v5.js && node --check v5-fixes.js && node --check clarity-v5.js && node --check clarity-state-v5.js && node --check clarity-layout-v5.js && node --check clarity-icons-v5.js && node --check app-shell.js && node --check qa/v5-04-strict-clarity.spec.js && node --check qa/v5-05-command-chain.spec.js && node --check qa/v5-06-layout-gap.spec.js && node --check qa/v5-07-icon-uniqueness.spec.js && node --check qa/v5-08-g3-mix-guidance.spec.js && node --check qa/visual-gate.spec.js && node --check playwright.visual.config.js",
+    "syntax": "node --check core.js && node --check game1.js && node --check game2.js && node --check game3.js && node --check gameplay-patches.js && node --check parity-fixes.js && node --check parity-v3.js && node --check parity-v4.js && node --check habit-v5.js && node --check house-v5.js && node --check house-v5-fixes.js && node --check house-v5-wash-fix.js && node --check slime-v5.js && node --check slime-tactile-fix.js && node --check slime-economy-v5.js && node --check v5-fixes.js && node --check clarity-v5.js && node --check clarity-state-v5.js && node --check clarity-layout-v5.js && node --check clarity-icons-v5.js && node --check app-shell.js && node --check qa/v5-04-strict-clarity.spec.js && node --check qa/v5-05-command-chain.spec.js && node --check qa/v5-06-layout-gap.spec.js && node --check qa/v5-07-icon-uniqueness.spec.js && node --check qa/v5-08-g3-mix-guidance.spec.js && node --check qa/v5-09-g2-all-pages-visual.spec.js && node --check qa/visual-gate.spec.js && node --check playwright.visual.config.js",
     "test:e2e": "playwright test",
     "test:visual": "playwright test --config=playwright.visual.config.js",
     "test": "npm run syntax && npm run test:e2e && npm run test:visual"
