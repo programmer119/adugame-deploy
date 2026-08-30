@@ -25,10 +25,10 @@ test('strict command chain: G1 every guided state points to the next valid actio
   await waitFor(page,()=>window.__ADUGAME_DEBUG__().step===1);await expectGuide(page,'균형',560,250);
   for(const q of [[560,250],[680,250],[800,250]])await dragL(page,r,[q,[735,475]],180);
   await waitFor(page,()=>window.__ADUGAME_DEBUG__().step===2);
-  const first=await page.evaluate(()=>{const s=window.__ADUGAME_SCENE__(),o=s.chosen[0];return{x:o.x,y:o.y};});await expectGuide(page,'캐릭터',first.x,first.y);
+  const first=await page.evaluate(()=>{const s=window.__ADUGAME_SCENE__(),o=s.chosen[0];return{x:o.x,y:o.y,kind:o.kind};});await expectGuide(page,'캐릭터',first.x,first.y);
   await dragL(page,r,[[first.x,first.y],[1040,330]],190);await waitFor(page,()=>window.__ADUGAME_DEBUG__().fed.length===1);await page.waitForTimeout(80);
-  const after=await page.evaluate(()=>{const s=window.__ADUGAME_SCENE__(),next=s.chosen.find(o=>o.visible!==false&&!s.fed.has(o.kind));return{hint:s.hintTarget,status:s.status.text,next:next&&{x:next.x,y:next.y},hidden:s.chosen.filter(o=>o.visible===false).map(o=>o.kind)};});
-  expect(after.hidden.length).toBeGreaterThan(0);expect(after.status).toContain('다음');expect(after.next).toBeTruthy();expect(Math.abs(after.hint.x-after.next.x)).toBeLessThanOrEqual(3);expect(Math.abs(after.hint.y-after.next.y)).toBeLessThanOrEqual(3);
+  const after=await page.evaluate(()=>{const s=window.__ADUGAME_SCENE__(),next=s.chosen.find(o=>!s.fed.has(o.kind));return{hint:s.hintTarget,status:s.status.text,next:next&&{x:next.x,y:next.y,kind:next.kind},fed:[...s.fed]};});
+  expect(after.fed).toContain(first.kind);expect(after.status).toContain('다음');expect(after.next).toBeTruthy();expect(after.next.kind).not.toBe(first.kind);expect(Math.abs(after.hint.x-after.next.x)).toBeLessThanOrEqual(3);expect(Math.abs(after.hint.y-after.next.y)).toBeLessThanOrEqual(3);
 });
 
 test('strict command chain: G2 missions update target and progress at every action',async({page})=>{
