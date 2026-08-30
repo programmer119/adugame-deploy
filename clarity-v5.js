@@ -38,8 +38,8 @@
   });
   wrapHabit(G1R3,function(){
     [...(this.toys||[]),...(this.foods||[])].forEach(c=>enhanceCard(c,TOOL_ICON[c.kind]||'◆',c.list?.filter(o=>o?.type==='Text')?.[1]?.text||c.kind));
-    this.add.text(255,465,'🧺',{fontSize:'34px'}).setOrigin(.5).setDepth(2).setName('tidy_box_icon');
-    this.add.text(255,515,'정리함',{fontFamily:'Arial',fontSize:'12px',fontStyle:'bold',color:'#5d3b1f'}).setOrigin(.5).setDepth(2).setName('tidy_box_label');
+    this.add.text(255,420,'🧺',{fontSize:'28px'}).setOrigin(.5).setDepth(1).setName('tidy_box_icon');
+    this.add.text(255,515,'정리함',{fontFamily:'Arial',fontSize:'12px',fontStyle:'bold',color:'#5d3b1f'}).setOrigin(.5).setDepth(1).setName('tidy_box_label');
   });
 
   function patchHouse(Klass){
@@ -65,7 +65,6 @@
   }
   [G2R1,G2R2,G2R3].forEach(patchHouse);
 
-  const legacyOrderText=CraftRound.prototype.orderText;
   CraftRound.prototype.orderText=function(){
     const color={blue:'🔵',green:'🟢',pink:'🩷'}[this.order.color]||'',deco={star:'★',flower:'✿',heart:'♥'}[this.order.deco]||'',container=this.order.container==='round'?'  ◯':this.order.container==='square'?'  ▢':'';
     return `${color}  ${deco}${container}`;
@@ -100,5 +99,5 @@
   const originalNext=CraftRound.prototype.prepareNextOrder;
   CraftRound.prototype.prepareNextOrder=function(){const result=originalNext.call(this);this.orderIcons?.setText(this.orderText());this.status?.setText('다음 손님이에요. 베이스와 활성액부터 다시 넣어요');if(this.base)this.hintTarget={x:this.base.x,y:this.base.y};return result;};
 
-  window.__ADUGAME_CLARITY_V5__={loaded:true,version:'5.1.0',houseIcons:Object.keys(ITEM_ICON).length,strictCommandMapping:true};
+  window.__ADUGAME_CLARITY_V5__={loaded:true,version:'5.1.1',houseIcons:Object.keys(ITEM_ICON).length,strictCommandMapping:true};
 })();
