@@ -1,4 +1,4 @@
-// G1 benchmark interaction hardening v8.7
+// G1 benchmark interaction hardening v8.8
 // Late visual rebuilding makes Container/GameObject pointer hit testing unreliable in Chromium.
 // Use the scene pointer stream itself and test visible activity bounds mathematically. Dedicated
 // transparent hit zones remain for hint/actionability QA while real mouse/touch behavior is scene-level.
@@ -14,7 +14,6 @@
     if(soap.input) soap.disableInteractive();
     if(scene.faucet?.input) scene.faucet.disableInteractive();
 
-    // Visible halo stays under the soap only as an affordance; it is deliberately non-interactive.
     const target=scene.add.ellipse(soap.x,soap.y+3,140,110,0xffa9c2,.10)
       .setStrokeStyle(3,0xffffff,.46)
       .setDepth(10.8)
@@ -23,8 +22,6 @@
     target.visualIdentity='illustrated-target';
     scene.soapInputTarget=target;
 
-    // Transparent Phaser zone makes the hinted faucet an explicit enabled hit target without
-    // relying on the late-restyled faucet Container's own local hit geometry.
     const faucet=scene.faucet;
     const faucetHit=scene.add.zone(faucet?.x??400,faucet?.y??300,180,180)
       .setInteractive({useHandCursor:true})
@@ -34,7 +31,8 @@
     faucetHit.visualIdentity='interaction-surface';
     scene.faucetInputTarget=faucetHit;
 
-    let pointerId=null;
+    let soapPointerId=null;
+    let scrubPointerId=null;
     const insideSoap=p=>{
       const dx=(p.x-soap.x)/70;
       const dy=(p.y-soap.y)/55;
@@ -58,32 +56,42 @@
         scene.tapFaucet();
         return;
       }
-      if(pointerId!==null || scene.step!==2 || !insideSoap(p)) return;
+      if(scene.step===3 && scrubPointerId===null && insideHands(p)){
+        scrubPointerId=p.id;
+        scene.__g1ScrubPointerDown=(scene.__g1ScrubPointerDown||0)+1;
+        scene.lastScrub=null;
+        scene.markMeaningfulInput?.('scrub_start',{id:'hands'});
+        return;
+      }
+      if(soapPointerId!==null || scene.step!==2 || !insideSoap(p)) return;
       scene.__g1SoapPointerDown=(scene.__g1SoapPointerDown||0)+1;
-      pointerId=p.id;
+      soapPointerId=p.id;
       scene.markMeaningfulInput?.('drag_start',{id:'soap'});
       soap.setDepth(1000);target.setDepth(999);
     });
 
     scene.input.on('pointermove',p=>{
-      if(pointerId!==null && p.id===pointerId && p.isDown){
+      if(soapPointerId!==null && p.id===soapPointerId){
         scene.__g1SoapPointerMove=(scene.__g1SoapPointerMove||0)+1;
         soap.setPosition(p.x,p.y);
         target.setPosition(p.x,p.y+3);
         return;
       }
-      if(scene.step!==3 || !p.isDown) return;
+      if(scene.step!==3 || scrubPointerId===null || p.id!==scrubPointerId) return;
       if(!insideHands(p)){
         scene.lastScrub=null;
         return;
       }
       scene.__g1ScrubPointerMove=(scene.__g1ScrubPointerMove||0)+1;
-      scene.scrub(p);
+      // G1R1.scrub only needs logical x/y plus a held-pointer flag. The explicit pointer id above
+      // is the source of truth for the held gesture; force isDown here so Phaser's transient flag
+      // cannot discard a real mouse/touch drag after late visual restyling.
+      scene.scrub({x:p.x,y:p.y,isDown:true});
     });
 
     scene.input.on('pointerup',p=>{
-      if(pointerId!==null && p.id===pointerId){
-        pointerId=null;
+      if(soapPointerId!==null && p.id===soapPointerId){
+        soapPointerId=null;
         scene.__g1SoapPointerUp=(scene.__g1SoapPointerUp||0)+1;
         scene.dropSoap(soap);
         scene.time.delayedCall(230,()=>{
@@ -92,11 +100,15 @@
           soap.setDepth(11);
         });
       }
-      if(scene.step===3) scene.lastScrub=null;
+      if(scrubPointerId!==null && p.id===scrubPointerId){
+        scrubPointerId=null;
+        scene.__g1ScrubPointerUp=(scene.__g1ScrubPointerUp||0)+1;
+        scene.lastScrub=null;
+      }
     });
 
     scene.time.addEvent({delay:40,loop:true,callback:()=>{
-      if(target.active && pointerId===null && soap.active && (Math.abs(target.x-soap.x)>2 || Math.abs((target.y-3)-soap.y)>2)) target.setPosition(soap.x,soap.y+3);
+      if(target.active && soapPointerId===null && soap.active && (Math.abs(target.x-soap.x)>2 || Math.abs((target.y-3)-soap.y)>2)) target.setPosition(soap.x,soap.y+3);
       if(faucetHit.active && faucet?.active && (Math.abs(faucetHit.x-faucet.x)>2 || Math.abs(faucetHit.y-faucet.y)>2)) faucetHit.setPosition(faucet.x,faucet.y);
     }});
   }
