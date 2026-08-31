@@ -39,3 +39,29 @@ jobs:
             qa/reports/
             test-results/
           if-no-files-found: ignore
+
+  webkit-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install test dependencies
+        run: npm install --no-audit --no-fund
+      - name: Install WebKit
+        run: npx playwright install --with-deps webkit
+      - name: WebKit syntax gate
+        run: npm run syntax
+      - name: Safari-engine v6 smoke and touch gate
+        run: npm run test:webkit
+      - name: Upload WebKit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: adugame-webkit-smoke-${{ github.ref_name }}
+          path: |
+            qa/reports/webkit-playwright-report.json
+            test-results/
+          if-no-files-found: ignore
