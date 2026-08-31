@@ -1,7 +1,7 @@
-// G1 benchmark interaction hardening v8.4
-// Late visual rebuilding makes Container-level pointer hit testing unreliable in Phaser.
-// Use a visible scene-native halo exactly under the soap as the real pointer target, then move
-// the soap and target together. The user still grabs the visible soap region 1:1 on mouse/touch.
+// G1 benchmark interaction hardening v8.5
+// Late visual rebuilding makes Container/GameObject pointer hit testing unreliable in Chromium.
+// Use the scene pointer stream itself and test the visible soap bounds mathematically. This keeps
+// mouse/touch input 1:1 with the drawn soap while avoiding Phaser GameObject hit-area edge cases.
 (() => {
   if (typeof G1R1 !== 'function') return;
 
@@ -13,21 +13,25 @@
     scene.children.list.filter(o=>o?.name==='g1v8_soap_target').forEach(o=>o.destroy());
     if(soap.input) soap.disableInteractive();
 
-    // Phaser Shape's native setInteractive() builds hit geometry in the correct local coordinate
-    // space. Do not hand-author an Ellipse here: Container/Shape origins use different input frames.
+    // Visible halo stays under the soap only as an affordance; it is deliberately non-interactive.
     const target=scene.add.ellipse(soap.x,soap.y+3,140,110,0xffa9c2,.10)
       .setStrokeStyle(3,0xffffff,.46)
       .setDepth(10.8)
-      .setName('g1v8_soap_target')
-      .setInteractive({useHandCursor:true});
+      .setName('g1v8_soap_target');
     target.semanticLabel='비누';
     target.visualIdentity='illustrated-target';
     scene.soapInputTarget=target;
 
     let pointerId=null;
-    target.on('pointerdown',p=>{
+    const insideSoap=p=>{
+      const dx=(p.x-soap.x)/70;
+      const dy=(p.y-soap.y)/55;
+      return dx*dx+dy*dy<=1;
+    };
+
+    scene.input.on('pointerdown',p=>{
+      if(pointerId!==null || scene.interactionLocked || scene.roundComplete || scene.step!==2 || !insideSoap(p)) return;
       scene.__g1SoapPointerDown=(scene.__g1SoapPointerDown||0)+1;
-      if(scene.interactionLocked || scene.roundComplete) return;
       pointerId=p.id;
       scene.markMeaningfulInput?.('drag_start',{id:'soap'});
       soap.setDepth(1000);target.setDepth(999);
