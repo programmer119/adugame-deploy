@@ -19,7 +19,7 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Capture G1R2 only
-        run: npx playwright test qa/g1r2-fast-visual.spec.js
+        run: npx playwright test --config=playwright.g1r2-fast.config.js
       - name: Upload G1R2 visual
         if: always()
         uses: actions/upload-artifact@v4
