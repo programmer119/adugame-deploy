@@ -1,7 +1,7 @@
-// G1 benchmark interaction hardening v8.5
+// G1 benchmark interaction hardening v8.6
 // Late visual rebuilding makes Container/GameObject pointer hit testing unreliable in Chromium.
-// Use the scene pointer stream itself and test the visible soap bounds mathematically. This keeps
-// mouse/touch input 1:1 with the drawn soap while avoiding Phaser GameObject hit-area edge cases.
+// Use the scene pointer stream itself and test the visible activity bounds mathematically. This keeps
+// mouse/touch input 1:1 with the drawn scene while avoiding Phaser GameObject hit-area edge cases.
 (() => {
   if (typeof G1R1 !== 'function') return;
 
@@ -28,6 +28,11 @@
       const dy=(p.y-soap.y)/55;
       return dx*dx+dy*dy<=1;
     };
+    const insideHands=p=>{
+      const h=scene.hands;
+      if(!h) return false;
+      return Math.abs(p.x-h.x)<=115 && Math.abs(p.y-h.y)<=72;
+    };
 
     scene.input.on('pointerdown',p=>{
       if(pointerId!==null || scene.interactionLocked || scene.roundComplete || scene.step!==2 || !insideSoap(p)) return;
@@ -38,22 +43,33 @@
     });
 
     scene.input.on('pointermove',p=>{
-      if(pointerId===null || p.id!==pointerId || !p.isDown) return;
-      scene.__g1SoapPointerMove=(scene.__g1SoapPointerMove||0)+1;
-      soap.setPosition(p.x,p.y);
-      target.setPosition(p.x,p.y+3);
+      if(pointerId!==null && p.id===pointerId && p.isDown){
+        scene.__g1SoapPointerMove=(scene.__g1SoapPointerMove||0)+1;
+        soap.setPosition(p.x,p.y);
+        target.setPosition(p.x,p.y+3);
+        return;
+      }
+      if(scene.step!==3 || !p.isDown) return;
+      if(!insideHands(p)){
+        scene.lastScrub=null;
+        return;
+      }
+      scene.__g1ScrubPointerMove=(scene.__g1ScrubPointerMove||0)+1;
+      scene.scrub(p);
     });
 
     scene.input.on('pointerup',p=>{
-      if(pointerId===null || p.id!==pointerId) return;
-      pointerId=null;
-      scene.__g1SoapPointerUp=(scene.__g1SoapPointerUp||0)+1;
-      scene.dropSoap(soap);
-      scene.time.delayedCall(230,()=>{
-        if(!soap.active || !target.active) return;
-        target.setPosition(soap.x,soap.y+3).setDepth(10.8);
-        soap.setDepth(11);
-      });
+      if(pointerId!==null && p.id===pointerId){
+        pointerId=null;
+        scene.__g1SoapPointerUp=(scene.__g1SoapPointerUp||0)+1;
+        scene.dropSoap(soap);
+        scene.time.delayedCall(230,()=>{
+          if(!soap.active || !target.active) return;
+          target.setPosition(soap.x,soap.y+3).setDepth(10.8);
+          soap.setDepth(11);
+        });
+      }
+      if(scene.step===3) scene.lastScrub=null;
     });
 
     scene.time.addEvent({delay:40,loop:true,callback:()=>{
