@@ -34,14 +34,14 @@ test('strict clarity: all nine rounds keep actionable controls and instruction t
   }
 });
 
-// 2) daily-habit tools must carry pictograms, not English code words as the primary visual identity.
-test('strict clarity: G1 required tools are pictogram-identifiable and stay inside activity panel',async({page})=>{
+// 2) v6 daily-habit tools must be illustrated scene objects while retaining semantic/pictogram metadata; English code words may never be the primary identity.
+test('strict clarity: G1 required tools are illustrated, identifiable and stay inside activity panel',async({page})=>{
   await open(page,1,1);let s=await page.evaluate(()=>{const x=window.__ADUGAME_SCENE__();return {soap:[x.soap.visualIdentity,x.soap.semanticLabel,x.soap.pictogram],flush:[x.flush.visualIdentity,x.flush.semanticLabel,x.flush.text]};});
-  expect(s.soap).toEqual(['pictogram','비누','🧼']);expect(s.flush[0]).toBe('pictogram');expect(s.flush[1]).toBe('물내림');expect(s.flush[2]).not.toBe('●');
+  expect(s.soap).toEqual(['illustrated','비누','🧼']);expect(s.flush[0]).toBe('pictogram');expect(s.flush[1]).toBe('물내림');expect(s.flush[2]).not.toBe('●');
   await open(page,1,2);s=await page.evaluate(()=>{const x=window.__ADUGAME_SCENE__();const b=x.clipper.getBounds();return {tools:[x.brush,x.paste,x.cloth,x.clipper].map(o=>({kind:o.kind,identity:o.visualIdentity,label:o.semanticLabel,p:o.pictogram})),clipperBounds:{x:b.x,y:b.y,w:b.width,h:b.height}};});
-  expect(s.tools.every(o=>o.identity==='pictogram'&&o.label&&o.p&&!/^(BRUSH|PASTE|CLOTH|CLIP)$/.test(o.p))).toBe(true);expect(s.clipperBounds.y+s.clipperBounds.h).toBeLessThanOrEqual(592);
+  expect(s.tools.every(o=>o.identity==='illustrated'&&o.label&&o.p&&!/^(BRUSH|PASTE|CLOTH|CLIP)$/.test(o.p))).toBe(true);expect(s.clipperBounds.y+s.clipperBounds.h).toBeLessThanOrEqual(592);
   await open(page,1,3);s=await page.evaluate(()=>{const x=window.__ADUGAME_SCENE__();return [...x.toys,...x.foods].map(o=>({kind:o.kind,identity:o.visualIdentity,label:o.semanticLabel,p:o.pictogram}));});
-  expect(s).toHaveLength(8);expect(s.every(o=>o.identity==='pictogram'&&o.label&&o.p)).toBe(true);
+  expect(s).toHaveLength(8);expect(s.every(o=>o.identity==='illustrated'&&o.label&&o.p)).toBe(true);
 });
 
 // 3) all 100 free-play house items and core fixtures must have a non-label visual identity.
