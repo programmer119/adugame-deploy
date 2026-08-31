@@ -44,12 +44,12 @@ test('strict clarity: G1 required tools are illustrated, identifiable and stay i
   expect(s).toHaveLength(8);expect(s.every(o=>o.identity==='illustrated'&&o.label&&o.p)).toBe(true);
 });
 
-// 3) all 100 free-play house items and core fixtures must have a non-label visual identity.
-test('strict clarity: G2 all portable items and fixtures are pictogram-identifiable',async({page})=>{
+// 3) v6 house keeps semantic/pictogram metadata but renders portable items as illustrated tokens and fixtures as illustrated scene objects.
+test('strict clarity: G2 all portable items and fixtures retain meaning with illustrated v6 identities',async({page})=>{
   await open(page,2,1);const s=await page.evaluate(()=>{const x=window.__ADUGAME_SCENE__();const fixtures=['car','toolbox','yardBox','stove','sink','fridge','sofa','washer','rack','bath','toyBox','bed','patio'].map(k=>x[k]).filter(Boolean);return {items:x.items.map(o=>({kind:o.kind,identity:o.visualIdentity,label:o.semanticLabel,p:o.pictogram})),fixtures:fixtures.map(o=>({name:o.name,identity:o.visualIdentity,label:o.semanticLabel,p:o.pictogram}))};});
   expect(s.items).toHaveLength(100);
-  const badItems=s.items.filter(o=>o.identity!=='pictogram'||!o.label||!o.p);expect(badItems,JSON.stringify(badItems)).toEqual([]);
-  const badFixtures=s.fixtures.filter(o=>o.identity!=='pictogram'||!o.label||!o.p);expect(badFixtures,JSON.stringify(badFixtures)).toEqual([]);
+  const badItems=s.items.filter(o=>o.identity!=='illustrated-token'||!o.label||!o.p);expect(badItems,JSON.stringify(badItems)).toEqual([]);
+  const badFixtures=s.fixtures.filter(o=>o.identity!=='illustrated'||!o.label||!o.p);expect(badFixtures,JSON.stringify(badFixtures)).toEqual([]);
 });
 
 // 4) the strictest command-target chain: visible condition badges -> requested decoration -> requested container -> serve.
