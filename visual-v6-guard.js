@@ -17,10 +17,12 @@
       if(this.step===0&&first)this.hintTarget=center(first);
     };
 
-    // Keep state, visible object and hint atomically aligned in the same success callback.
+    // Keep state, visible object and hint aligned. For intermediate successes the next
+    // target is known at drop time, so switch guidance immediately while snap feedback plays.
     G1R3.prototype.dropToy=function(o){
       if(this.step!==0||dist(o.x,o.y,255,465)>145){this.wrongReturn(o,'tidy_miss',this.box);return;}
       this.tidied.add(o.kind);
+      if(this.tidied.size<3)this.hintTarget=center(nextToy(this));
       this.snap(o,210+(this.tidied.size-1)*45,470,()=>{
         o.setScale(.72);if(o.input)o.input.enabled=false;this.v5SetStep(this.tidied.size);
         if(this.tidied.size===3){
@@ -40,6 +42,7 @@
       if(!HEALTHY.has(o.kind)){this.curious(this.face);this.wrongReturn(o,'balanced_choice',this.plate);this.status.setText('매일 먹는 식사는 과일·채소·통곡물처럼 몸에 좋은 조합으로 골라봐요');this.hintTarget=center(nextHealthy(this));return;}
       if(this.chosen.includes(o))return;
       const idx=this.chosen.length;this.chosen.push(o);
+      if(this.chosen.length<3)this.hintTarget=center(nextHealthy(this));
       this.snap(o,660+idx*75,470-idx*5,()=>{
         o.setScale(.72);o.home={x:o.x,y:o.y};this.v5SetStep(4+this.chosen.length);
         if(this.chosen.length===3){
@@ -53,5 +56,5 @@
       });
     };
   }
-  window.__ADUGAME_VISUAL_V6_GUARD__={loaded:true,version:'6.2.6',r3CharacterSpacing:true,r3LiveGuidance:true,r3AtomicGuidance:true};
+  window.__ADUGAME_VISUAL_V6_GUARD__={loaded:true,version:'6.2.7',r3CharacterSpacing:true,r3LiveGuidance:true,r3AtomicGuidance:true,r3ImmediateNextTarget:true};
 })();
