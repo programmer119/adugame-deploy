@@ -25,15 +25,15 @@ test('strict command chain: G1 every guided state points to the next valid actio
   const toys=[[190,270],[305,270],[420,270]];
   for(let i=0;i<toys.length;i++){
     await dragL(page,r,[toys[i],[255,465]],170);
-    await waitFor(page,i<2?()=>window.__ADUGAME_DEBUG__().tidied.length===i+1:()=>window.__ADUGAME_DEBUG__().step===1);
-    if(i<2)await expectGuide(page,'장난감',toys[i+1][0],toys[i+1][1]);
+    if(i<2){await waitFor(page,n=>window.__ADUGAME_DEBUG__().tidied.length===n,8000,i+1);await expectGuide(page,'장난감',toys[i+1][0],toys[i+1][1]);}
+    else await waitFor(page,()=>window.__ADUGAME_DEBUG__().step===1);
   }
   await expectGuide(page,'균형',555,270);
   const healthy=[[555,270],[670,270],[785,270]];
   for(let i=0;i<healthy.length;i++){
     await dragL(page,r,[healthy[i],[735,475]],180);
-    await waitFor(page,i<2?()=>window.__ADUGAME_DEBUG__().chosen.length===i+1:()=>window.__ADUGAME_DEBUG__().step===2);
-    if(i<2)await expectGuide(page,'균형',healthy[i+1][0],healthy[i+1][1]);
+    if(i<2){await waitFor(page,n=>window.__ADUGAME_DEBUG__().chosen.length===n,8000,i+1);await expectGuide(page,'균형',healthy[i+1][0],healthy[i+1][1]);}
+    else await waitFor(page,()=>window.__ADUGAME_DEBUG__().step===2);
   }
   const first=await page.evaluate(()=>{const s=window.__ADUGAME_SCENE__(),o=s.chosen[0];return{x:o.x,y:o.y,kind:o.kind};});await expectGuide(page,'캐릭터',first.x,first.y);
   await dragL(page,r,[[first.x,first.y],[1040,330]],190);await waitFor(page,()=>window.__ADUGAME_DEBUG__().fed.length===1);await page.waitForTimeout(80);
