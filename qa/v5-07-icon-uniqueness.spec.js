@@ -5,7 +5,7 @@ async function open(page){
   await page.waitForFunction(()=>window.__ADUGAME_DEBUG__?.()?.key==='G2R1');
 }
 
-test('strict clarity: every distinct G2 portable kind renders its own visible pictogram',async({page})=>{
+test('strict clarity: every distinct G2 portable kind renders its own visible shelf pictogram',async({page})=>{
   await open(page);
   const s=await page.evaluate(()=>{
     const sc=window.__ADUGAME_SCENE__();
@@ -19,8 +19,8 @@ test('strict clarity: every distinct G2 portable kind renders its own visible pi
   expect(s.patch?.loaded).toBe(true);
   expect(s.patch?.uniquePortableKinds).toBe(true);
   expect(s.items).toHaveLength(100);
-  const bad=s.items.filter(o=>o.identity!=='pictogram'||!o.label||!o.p||o.rendered!==o.p||o.renderedWidth<=0||o.renderedHeight<=0||o.renderedWidth>58);
-  expect(bad,`non-rendered/oversize pictograms: ${JSON.stringify(bad)}`).toEqual([]);
+  const bad=s.items.filter(o=>o.identity!=='scene-shelf-item'||!o.label||!o.p||o.rendered!==o.p||o.renderedWidth<=0||o.renderedHeight<=0||o.renderedWidth>58);
+  expect(bad,`non-rendered/oversize v6 shelf pictograms: ${JSON.stringify(bad)}`).toEqual([]);
 
   const byKind=new Map();for(const o of s.items)if(!byKind.has(o.kind))byKind.set(o.kind,o);
   const byPic=new Map();for(const o of byKind.values()){if(!byPic.has(o.p))byPic.set(o.p,[]);byPic.get(o.p).push(o.kind);}
