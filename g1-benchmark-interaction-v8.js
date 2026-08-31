@@ -1,7 +1,8 @@
-// G1 benchmark interaction hardening v8.8
-// Late visual rebuilding makes Container/GameObject pointer hit testing unreliable in Chromium.
-// Use the scene pointer stream itself and test visible activity bounds mathematically. Dedicated
-// transparent hit zones remain for hint/actionability QA while real mouse/touch behavior is scene-level.
+// G1 benchmark interaction hardening v8.9
+// Late visual rebuilding makes Container/GameObject hit testing unreliable in Chromium.
+// Faucet/soap use scene-level logical hit tests. Hand scrubbing uses the canvas DOM Pointer Events
+// stream directly, converted back to the 1280x720 logical game space, so mouse and touch share one
+// deterministic held-gesture path independent of Phaser's transient pointermove/isDown behavior.
 (() => {
   if (typeof G1R1 !== 'function') return;
 
@@ -32,7 +33,6 @@
     scene.faucetInputTarget=faucetHit;
 
     let soapPointerId=null;
-    let scrubPointerId=null;
     const insideSoap=p=>{
       const dx=(p.x-soap.x)/70;
       const dy=(p.y-soap.y)/55;
@@ -56,13 +56,6 @@
         scene.tapFaucet();
         return;
       }
-      if(scene.step===3 && scrubPointerId===null && insideHands(p)){
-        scrubPointerId=p.id;
-        scene.__g1ScrubPointerDown=(scene.__g1ScrubPointerDown||0)+1;
-        scene.lastScrub=null;
-        scene.markMeaningfulInput?.('scrub_start',{id:'hands'});
-        return;
-      }
       if(soapPointerId!==null || scene.step!==2 || !insideSoap(p)) return;
       scene.__g1SoapPointerDown=(scene.__g1SoapPointerDown||0)+1;
       soapPointerId=p.id;
@@ -71,41 +64,71 @@
     });
 
     scene.input.on('pointermove',p=>{
-      if(soapPointerId!==null && p.id===soapPointerId){
-        scene.__g1SoapPointerMove=(scene.__g1SoapPointerMove||0)+1;
-        soap.setPosition(p.x,p.y);
-        target.setPosition(p.x,p.y+3);
-        return;
-      }
-      if(scene.step!==3 || scrubPointerId===null || p.id!==scrubPointerId) return;
-      if(!insideHands(p)){
-        scene.lastScrub=null;
-        return;
-      }
-      scene.__g1ScrubPointerMove=(scene.__g1ScrubPointerMove||0)+1;
-      // G1R1.scrub only needs logical x/y plus a held-pointer flag. The explicit pointer id above
-      // is the source of truth for the held gesture; force isDown here so Phaser's transient flag
-      // cannot discard a real mouse/touch drag after late visual restyling.
-      scene.scrub({x:p.x,y:p.y,isDown:true});
+      if(soapPointerId===null || p.id!==soapPointerId) return;
+      scene.__g1SoapPointerMove=(scene.__g1SoapPointerMove||0)+1;
+      soap.setPosition(p.x,p.y);
+      target.setPosition(p.x,p.y+3);
     });
 
     scene.input.on('pointerup',p=>{
-      if(soapPointerId!==null && p.id===soapPointerId){
-        soapPointerId=null;
-        scene.__g1SoapPointerUp=(scene.__g1SoapPointerUp||0)+1;
-        scene.dropSoap(soap);
-        scene.time.delayedCall(230,()=>{
-          if(!soap.active || !target.active) return;
-          target.setPosition(soap.x,soap.y+3).setDepth(10.8);
-          soap.setDepth(11);
-        });
-      }
-      if(scrubPointerId!==null && p.id===scrubPointerId){
-        scrubPointerId=null;
-        scene.__g1ScrubPointerUp=(scene.__g1ScrubPointerUp||0)+1;
-        scene.lastScrub=null;
-      }
+      if(soapPointerId===null || p.id!==soapPointerId) return;
+      soapPointerId=null;
+      scene.__g1SoapPointerUp=(scene.__g1SoapPointerUp||0)+1;
+      scene.dropSoap(soap);
+      scene.time.delayedCall(230,()=>{
+        if(!soap.active || !target.active) return;
+        target.setPosition(soap.x,soap.y+3).setDepth(10.8);
+        soap.setDepth(11);
+      });
     });
+
+    // DOM-level held gesture for the actual hand-scrub activity.
+    const canvas=scene.game?.canvas;
+    let scrubPointerId=null;
+    const logical=e=>{
+      const r=canvas.getBoundingClientRect();
+      return {
+        x:(e.clientX-r.left)*1280/Math.max(1,r.width),
+        y:(e.clientY-r.top)*720/Math.max(1,r.height)
+      };
+    };
+    const onDomDown=e=>{
+      if(scene.step!==3 || scene.interactionLocked || scene.roundComplete || scrubPointerId!==null) return;
+      const p=logical(e);if(!insideHands(p))return;
+      scrubPointerId=e.pointerId;
+      scene.__g1ScrubPointerDown=(scene.__g1ScrubPointerDown||0)+1;
+      scene.lastScrub=null;
+      scene.markMeaningfulInput?.('scrub_start',{id:'hands'});
+      try{canvas.setPointerCapture(e.pointerId);}catch(_){}
+      e.preventDefault();
+    };
+    const onDomMove=e=>{
+      if(scrubPointerId===null || e.pointerId!==scrubPointerId || scene.step!==3)return;
+      const p=logical(e);
+      if(!insideHands(p)){scene.lastScrub=null;return;}
+      scene.__g1ScrubPointerMove=(scene.__g1ScrubPointerMove||0)+1;
+      scene.scrub({x:p.x,y:p.y,isDown:true});
+      e.preventDefault();
+    };
+    const endDom=e=>{
+      if(scrubPointerId===null || e.pointerId!==scrubPointerId)return;
+      scrubPointerId=null;
+      scene.__g1ScrubPointerUp=(scene.__g1ScrubPointerUp||0)+1;
+      scene.lastScrub=null;
+      try{canvas.releasePointerCapture(e.pointerId);}catch(_){}
+    };
+    if(canvas){
+      canvas.addEventListener('pointerdown',onDomDown,{passive:false});
+      canvas.addEventListener('pointermove',onDomMove,{passive:false});
+      canvas.addEventListener('pointerup',endDom,{passive:false});
+      canvas.addEventListener('pointercancel',endDom,{passive:false});
+      scene.events.once(Phaser.Scenes.Events.SHUTDOWN,()=>{
+        canvas.removeEventListener('pointerdown',onDomDown);
+        canvas.removeEventListener('pointermove',onDomMove);
+        canvas.removeEventListener('pointerup',endDom);
+        canvas.removeEventListener('pointercancel',endDom);
+      });
+    }
 
     scene.time.addEvent({delay:40,loop:true,callback:()=>{
       if(target.active && soapPointerId===null && soap.active && (Math.abs(target.x-soap.x)>2 || Math.abs((target.y-3)-soap.y)>2)) target.setPosition(soap.x,soap.y+3);
