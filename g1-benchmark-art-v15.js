@@ -1,9 +1,9 @@
-// ADUGAME G1R2 v15 — existing authored assets only; ZERO generated/drawn visuals.
+// ADUGAME G1R2 v15.1 — existing authored assets only; ZERO generated/drawn visuals.
 (() => {
   if (typeof G1R2 !== 'function') return;
   const SRC={
-    bathroom:'https://img.itch.zone/aW1nLzE3MzI0NjY3LnBuZw==/original/AOVUUb.png',
-    bathroomFallback:'https://img.itch.zone/aW1nLzIzODI0MTMxLnBuZw==/original/7Lpf5J.png',
+    bathroom:'https://img.itch.zone/aW1nLzIzODI0MTMxLnBuZw==/original/7Lpf5J.png',
+    bathroomFallback:'https://img.itch.zone/aW1nLzE3MzI0NjU3LnBuZw==/original/QX1mok.png',
     toothbrush:'https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@master/color/svg/1FAA5.svg',
     toothpaste:'https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@master/color/svg/1F9F4.svg',
     sponge:'https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@master/color/svg/1F9FD.svg',
@@ -25,25 +25,13 @@
     dom.kid.style.left='68%';
     dom.kid.style.top='61%';
     dom.kid.style.transform='translate(-50%,-50%)';
-    dom.paste.style.filter='drop-shadow(0 7px 7px rgba(20,40,70,.16))';
-    dom.brush.style.filter='drop-shadow(0 7px 7px rgba(20,40,70,.16))';
-    dom.cloth.style.filter='drop-shadow(0 7px 7px rgba(20,40,70,.16))';
-    dom.clipper.style.filter='drop-shadow(0 7px 7px rgba(20,40,70,.16))';
+    [dom.paste,dom.brush,dom.cloth,dom.clipper].forEach(el=>el.style.filter='drop-shadow(0 7px 7px rgba(20,40,70,.16))');
     scene.v15Art='existing-assets-only-r2';
     window.__ADUGAME_ART_SOURCE__=window.__ADUGAME_ART_SOURCE__||{};
-    window.__ADUGAME_ART_SOURCE__.G1R2={
-      background:{name:'Tiny Treats - Bubbly Bathroom scene',author:'Tiny Treats',license:'CC0'},
-      character:{name:'Red Hat Boy',author:'pzUH / GameArt2D',license:'CC0'},
-      props:{name:'OpenMoji existing SVG assets',license:'CC BY-SA 4.0'},
-      generatedVisualAssets:0,version:'v15.0',rendering:'existing external images only'
-    };
+    window.__ADUGAME_ART_SOURCE__.G1R2={background:{name:'Tiny Treats - Bubbly Bathroom scene',author:'Tiny Treats',license:'CC0'},character:{name:'Red Hat Boy',author:'pzUH / GameArt2D',license:'CC0'},props:{name:'OpenMoji existing SVG assets',license:'CC BY-SA 4.0'},generatedVisualAssets:0,version:'v15.1',rendering:'existing external images only'};
     return true;
   }
   const priorCreate=G1R2.prototype.create;
-  G1R2.prototype.create=function(){
-    priorCreate.call(this);
-    const tryApply=()=>{ if(!apply(this)) this.time.delayedCall(120,tryApply); };
-    this.time.delayedCall(430,tryApply);
-  };
-  window.__ADUGAME_G1_BENCHMARK_ART_V15__={loaded:true,version:'15.0',generatedVisualAssets:0};
+  G1R2.prototype.create=function(){priorCreate.call(this);const tryApply=()=>{if(!apply(this))this.time.delayedCall(120,tryApply);};this.time.delayedCall(430,tryApply);};
+  window.__ADUGAME_G1_BENCHMARK_ART_V15__={loaded:true,version:'15.1',generatedVisualAssets:0};
 })();
