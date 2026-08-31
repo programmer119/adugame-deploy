@@ -152,6 +152,10 @@
     g.fillStyle(P.white,.62).fillRoundedRect(-28,-17,44,11,6);
     g.lineStyle(4,P.white,.78).strokeCircle(20,7,11);g.strokeCircle(34,-5,7);
     c.add(g);c.setPosition(270,395).setDepth(11);c.home={x:c.x,y:c.y};
+    // Rebuild the real hit target after the delayed art pass. This keeps the visible soap and the
+    // draggable target identical on desktop and touch instead of relying on stale pre-art geometry.
+    c.setSize(136,104).setInteractive(new Phaser.Geom.Rectangle(-68,-52,136,104),Phaser.Geom.Rectangle.Contains);
+    scene.input.setDraggable(c,true);
     c.visualIdentity='illustrated';c.semanticLabel='비누';c.licensedArt=false;
   }
 
