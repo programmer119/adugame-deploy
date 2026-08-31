@@ -25,5 +25,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: g1r2-fast-visual
-          path: qa/reports/g1r2-fast/G1R2-v12.png
+          path: qa/reports/g1r2-fast/G1R2-v13.png
           if-no-files-found: error
