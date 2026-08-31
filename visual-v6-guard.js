@@ -1,5 +1,18 @@
 // Final live visual spacing/guidance guard for v6.2.
 (() => {
+  if(typeof G1R2!=='undefined'){
+    const oldCreate=G1R2.prototype.create;
+    G1R2.prototype.create=function(){
+      oldCreate.call(this);
+      // The illustrated Korean label extends the clipper container below the activity panel.
+      // Lift the live object (and its drag return home) rather than weakening the layout gate.
+      if(this.clipper){
+        this.clipper.setY(570);
+        if(this.clipper.home)this.clipper.home={...this.clipper.home,y:570};
+      }
+    };
+  }
+
   if(typeof G1R3!=='undefined'){
     const HEALTHY=new Set(['apple','carrot','wholegrain']);
     const center=o=>o?{x:o.x,y:o.y}:null;
@@ -56,5 +69,5 @@
       });
     };
   }
-  window.__ADUGAME_VISUAL_V6_GUARD__={loaded:true,version:'6.2.7',r3CharacterSpacing:true,r3LiveGuidance:true,r3AtomicGuidance:true,r3ImmediateNextTarget:true};
+  window.__ADUGAME_VISUAL_V6_GUARD__={loaded:true,version:'6.2.8',r2ClipperSpacing:true,r3CharacterSpacing:true,r3LiveGuidance:true,r3AtomicGuidance:true,r3ImmediateNextTarget:true};
 })();
