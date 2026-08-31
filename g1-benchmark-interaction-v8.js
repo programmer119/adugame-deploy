@@ -1,4 +1,4 @@
-// G1 benchmark interaction hardening v8.3
+// G1 benchmark interaction hardening v8.4
 // Late visual rebuilding makes Container-level pointer hit testing unreliable in Phaser.
 // Use a visible scene-native halo exactly under the soap as the real pointer target, then move
 // the soap and target together. The user still grabs the visible soap region 1:1 on mouse/touch.
@@ -13,27 +13,29 @@
     scene.children.list.filter(o=>o?.name==='g1v8_soap_target').forEach(o=>o.destroy());
     if(soap.input) soap.disableInteractive();
 
-    // A soft oval is part of the scene art, not a hidden card/overlay. Its 140x110 target encloses
-    // the actual 96x68 soap drawing and is centered on the same coordinates.
+    // Phaser Shape's native setInteractive() builds hit geometry in the correct local coordinate
+    // space. Do not hand-author an Ellipse here: Container/Shape origins use different input frames.
     const target=scene.add.ellipse(soap.x,soap.y+3,140,110,0xffa9c2,.10)
       .setStrokeStyle(3,0xffffff,.46)
       .setDepth(10.8)
       .setName('g1v8_soap_target')
-      .setInteractive(new Phaser.Geom.Ellipse(70,55,140,110),Phaser.Geom.Ellipse.Contains);
+      .setInteractive({useHandCursor:true});
     target.semanticLabel='비누';
     target.visualIdentity='illustrated-target';
+    scene.soapInputTarget=target;
 
     let pointerId=null;
     target.on('pointerdown',p=>{
+      scene.__g1SoapPointerDown=(scene.__g1SoapPointerDown||0)+1;
       if(scene.interactionLocked || scene.roundComplete) return;
       pointerId=p.id;
-      scene.__g1SoapPointerDown=(scene.__g1SoapPointerDown||0)+1;
       scene.markMeaningfulInput?.('drag_start',{id:'soap'});
       soap.setDepth(1000);target.setDepth(999);
     });
 
     scene.input.on('pointermove',p=>{
       if(pointerId===null || p.id!==pointerId || !p.isDown) return;
+      scene.__g1SoapPointerMove=(scene.__g1SoapPointerMove||0)+1;
       soap.setPosition(p.x,p.y);
       target.setPosition(p.x,p.y+3);
     });
@@ -50,7 +52,6 @@
       });
     });
 
-    // Keep the target synchronized if a legacy return/snap tween moves the soap.
     scene.time.addEvent({delay:40,loop:true,callback:()=>{
       if(!target.active || pointerId!==null || !soap.active) return;
       if(Math.abs(target.x-soap.x)>2 || Math.abs((target.y-3)-soap.y)>2) target.setPosition(soap.x,soap.y+3);
