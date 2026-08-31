@@ -33,7 +33,12 @@ async function mixBatch(page,r,colorX,label){
 }
 async function serve(page,r,decoX,served){
   await dragL(page,r,[[decoX,485],[650,420]],220);
-  await clickL(page,r,870,630);
+  // Playwright's mouseup can resolve one frame before Phaser dispatches dragend.
+  // Wait for the actual requested decoration to enter live game state before submitting.
+  await waitFor(page,()=>{const s=window.__ADUGAME_SCENE__(),d=window.__ADUGAME_DEBUG__();return !!s?.order?.deco&&d.chosen.decos.includes(s.order.deco);},5000);
+  const button=await page.evaluate(()=>{const b=window.__ADUGAME_SCENE__().serveButton;return {x:b.x,y:b.y,input:!!b.input?.enabled,visible:b.visible!==false};});
+  expect(button.visible).toBe(true);expect(button.input).toBe(true);
+  await clickL(page,r,button.x,button.y);
   await waitFor(page,n=>window.__ADUGAME_DEBUG__().ordersServed>=n,9000,served);
 }
 
