@@ -16,7 +16,7 @@ test('strict clarity: all 12 G2 floor/page inventory views render identifiable a
     await page.waitForTimeout(80);
     expect(state.pageText).toBe(`물건 ${pg+1}/3`);
     expect(state.items.length).toBe(pg<2?9:7);
-    const bad=state.items.filter(o=>o.identity!=='pictogram'||!o.p||!o.label||o.rendered!==o.p);expect(bad,`F${floor+1} P${pg+1} bad icons ${JSON.stringify(bad)}`).toEqual([]);
+    const bad=state.items.filter(o=>o.identity!=='scene-shelf-item'||!o.p||!o.label||o.rendered!==o.p);expect(bad,`F${floor+1} P${pg+1} bad v6 shelf icons ${JSON.stringify(bad)}`).toEqual([]);
     const overlap=state.items.filter(o=>inter(o.b,state.pager)>0);expect(overlap,`F${floor+1} P${pg+1} pager overlap ${JSON.stringify(overlap)}`).toEqual([]);
     await canvas.screenshot({path:path.join(OUT,`G2_F${floor+1}_P${pg+1}.png`)});
   }
