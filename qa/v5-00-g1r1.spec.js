@@ -15,6 +15,39 @@ async function livePoint(page,key){
 }
 async function waitFor(page,fn,timeout=8000){return page.waitForFunction(fn,null,{timeout});}
 async function state(page,label){const s=await page.evaluate(()=>window.__ADUGAME_DEBUG__());console.log('V5_G1R1_STATE',label,JSON.stringify(s));return s;}
+async function soapDiag(page,label){
+  const d=await page.evaluate(()=>{
+    const s=window.__ADUGAME_SCENE__?.();
+    if(!s)return {scene:false};
+    const soap=s.soap,target=s.soapInputTarget;
+    const point={x:soap?.x??0,y:soap?.y??0};
+    const overlaps=[];
+    for(const o of s.children?.list||[]){
+      if(!o?.input)continue;
+      let b=null,contains=false;
+      try{b=o.getBounds?.();contains=!!b&&Phaser.Geom.Rectangle.Contains(b,point.x,point.y);}catch(_){ }
+      if(!contains)continue;
+      overlaps.push({
+        name:String(o.name||''),type:String(o.type||o.constructor?.name||''),depth:Number(o.depth||0),
+        visible:o.visible!==false,active:o.active!==false,alpha:Number(o.alpha??1),inputEnabled:o.input?.enabled!==false,
+        x:Number(o.x||0),y:Number(o.y||0),bounds:b?{x:b.x,y:b.y,w:b.width,h:b.height}:null
+      });
+    }
+    overlaps.sort((a,b)=>b.depth-a.depth);
+    const info=o=>o?{
+      name:String(o.name||''),type:String(o.type||o.constructor?.name||''),x:o.x,y:o.y,depth:o.depth,
+      visible:o.visible!==false,active:o.active!==false,alpha:o.alpha,inputEnabled:o.input?.enabled!==false,
+      inputType:o.input?.hitArea?.type??null
+    }:null;
+    return {
+      scene:true,step:s.step,topOnly:s.input?.topOnly,soap:info(soap),target:info(target),overlaps,
+      counters:{down:s.__g1SoapPointerDown||0,move:s.__g1SoapPointerMove||0,up:s.__g1SoapPointerUp||0},
+      telemetry:(window.__ADUGAME_TELEMETRY__||[]).slice(-12)
+    };
+  });
+  console.log(`SOAP_DIAG_${label}`,JSON.stringify(d));
+  return d;
+}
 
 test('v5 G1R1 exact state chain',async({page})=>{
   await page.goto('/index.html?game=1&round=1&e2e=1',{waitUntil:'networkidle'});
@@ -38,7 +71,10 @@ test('v5 G1R1 exact state chain',async({page})=>{
 
   const soap=await livePoint(page,'soap'),hands=await livePoint(page,'hands');
   expect(soap).toBeTruthy();expect(hands).toBeTruthy();
+  await soapDiag(page,'BEFORE');
   await dragL(page,r,[[soap.x,soap.y],[hands.x,hands.y]],220);
+  await page.waitForTimeout(260);
+  await soapDiag(page,'AFTER');
   await waitFor(page,()=>window.__ADUGAME_DEBUG__()?.step===3);
   expect((await state(page,'soap')).step).toBe(3);
 
