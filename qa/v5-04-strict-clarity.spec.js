@@ -44,11 +44,11 @@ test('strict clarity: G1 required tools are illustrated, identifiable and stay i
   expect(s).toHaveLength(8);expect(s.every(o=>o.identity==='illustrated'&&o.label&&o.p)).toBe(true);
 });
 
-// 3) v6 house keeps semantic/pictogram metadata but renders portable items as illustrated tokens and fixtures as illustrated scene objects.
-test('strict clarity: G2 all portable items and fixtures retain meaning with illustrated v6 identities',async({page})=>{
+// 3) final v6 house renders portable inventory as scene-shelf items while retaining semantic/pictogram metadata; fixtures remain illustrated scene objects.
+test('strict clarity: G2 portable shelf items and fixtures retain meaning with final v6 identities',async({page})=>{
   await open(page,2,1);const s=await page.evaluate(()=>{const x=window.__ADUGAME_SCENE__();const fixtures=['car','toolbox','yardBox','stove','sink','fridge','sofa','washer','rack','bath','toyBox','bed','patio'].map(k=>x[k]).filter(Boolean);return {items:x.items.map(o=>({kind:o.kind,identity:o.visualIdentity,label:o.semanticLabel,p:o.pictogram})),fixtures:fixtures.map(o=>({name:o.name,identity:o.visualIdentity,label:o.semanticLabel,p:o.pictogram}))};});
   expect(s.items).toHaveLength(100);
-  const badItems=s.items.filter(o=>o.identity!=='illustrated-token'||!o.label||!o.p);expect(badItems,JSON.stringify(badItems)).toEqual([]);
+  const badItems=s.items.filter(o=>o.identity!=='scene-shelf-item'||!o.label||!o.p);expect(badItems,JSON.stringify(badItems)).toEqual([]);
   const badFixtures=s.fixtures.filter(o=>o.identity!=='illustrated'||!o.label||!o.p);expect(badFixtures,JSON.stringify(badFixtures)).toEqual([]);
 });
 
