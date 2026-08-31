@@ -1,8 +1,7 @@
-// G1 benchmark interaction hardening v8.9
+// G1 benchmark interaction hardening v8.10
 // Late visual rebuilding makes Container/GameObject hit testing unreliable in Chromium.
-// Faucet/soap use scene-level logical hit tests. Hand scrubbing uses the canvas DOM Pointer Events
-// stream directly, converted back to the 1280x720 logical game space, so mouse and touch share one
-// deterministic held-gesture path independent of Phaser's transient pointermove/isDown behavior.
+// Faucet/soap use scene-level logical hit tests. Hand scrubbing is captured at window level before
+// Phaser can consume the canvas event, then converted back to the 1280x720 logical game space.
 (() => {
   if (typeof G1R1 !== 'function') return;
 
@@ -82,53 +81,66 @@
       });
     });
 
-    // DOM-level held gesture for the actual hand-scrub activity.
+    // Capture-phase DOM gesture: fires before Phaser's target/bubble handlers can consume it.
     const canvas=scene.game?.canvas;
     let scrubPointerId=null;
     const logical=e=>{
       const r=canvas.getBoundingClientRect();
       return {
         x:(e.clientX-r.left)*1280/Math.max(1,r.width),
-        y:(e.clientY-r.top)*720/Math.max(1,r.height)
+        y:(e.clientY-r.top)*720/Math.max(1,r.height),
+        inCanvas:e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom
       };
     };
     const onDomDown=e=>{
-      if(scene.step!==3 || scene.interactionLocked || scene.roundComplete || scrubPointerId!==null) return;
-      const p=logical(e);if(!insideHands(p))return;
+      if(!canvas || scene.step!==3 || scene.interactionLocked || scene.roundComplete || scrubPointerId!==null) return;
+      const p=logical(e);if(!p.inCanvas || !insideHands(p))return;
       scrubPointerId=e.pointerId;
+      scene.__g1DomScrubAttached=true;
       scene.__g1ScrubPointerDown=(scene.__g1ScrubPointerDown||0)+1;
       scene.lastScrub=null;
       scene.markMeaningfulInput?.('scrub_start',{id:'hands'});
       try{canvas.setPointerCapture(e.pointerId);}catch(_){}
-      e.preventDefault();
     };
     const onDomMove=e=>{
-      if(scrubPointerId===null || e.pointerId!==scrubPointerId || scene.step!==3)return;
+      if(!canvas || scrubPointerId===null || e.pointerId!==scrubPointerId || scene.step!==3)return;
       const p=logical(e);
-      if(!insideHands(p)){scene.lastScrub=null;return;}
+      if(!p.inCanvas || !insideHands(p)){scene.lastScrub=null;return;}
       scene.__g1ScrubPointerMove=(scene.__g1ScrubPointerMove||0)+1;
       scene.scrub({x:p.x,y:p.y,isDown:true});
-      e.preventDefault();
     };
     const endDom=e=>{
       if(scrubPointerId===null || e.pointerId!==scrubPointerId)return;
       scrubPointerId=null;
       scene.__g1ScrubPointerUp=(scene.__g1ScrubPointerUp||0)+1;
       scene.lastScrub=null;
-      try{canvas.releasePointerCapture(e.pointerId);}catch(_){}
+      try{canvas?.releasePointerCapture(e.pointerId);}catch(_){}
     };
     if(canvas){
-      canvas.addEventListener('pointerdown',onDomDown,{passive:false});
-      canvas.addEventListener('pointermove',onDomMove,{passive:false});
-      canvas.addEventListener('pointerup',endDom,{passive:false});
-      canvas.addEventListener('pointercancel',endDom,{passive:false});
+      scene.__g1DomScrubAttached=true;
+      window.addEventListener('pointerdown',onDomDown,true);
+      window.addEventListener('pointermove',onDomMove,true);
+      window.addEventListener('pointerup',endDom,true);
+      window.addEventListener('pointercancel',endDom,true);
       scene.events.once(Phaser.Scenes.Events.SHUTDOWN,()=>{
-        canvas.removeEventListener('pointerdown',onDomDown);
-        canvas.removeEventListener('pointermove',onDomMove);
-        canvas.removeEventListener('pointerup',endDom);
-        canvas.removeEventListener('pointercancel',endDom);
+        window.removeEventListener('pointerdown',onDomDown,true);
+        window.removeEventListener('pointermove',onDomMove,true);
+        window.removeEventListener('pointerup',endDom,true);
+        window.removeEventListener('pointercancel',endDom,true);
       });
     }
+
+    // Include hardening counters in the normal debug surface while this gate is active.
+    const priorDebug=scene.debugState.bind(scene);
+    scene.debugState=()=>({
+      ...priorDebug(),
+      g1InputHardening:{
+        domScrubAttached:!!scene.__g1DomScrubAttached,
+        soapDown:scene.__g1SoapPointerDown||0,soapMove:scene.__g1SoapPointerMove||0,soapUp:scene.__g1SoapPointerUp||0,
+        scrubDown:scene.__g1ScrubPointerDown||0,scrubMove:scene.__g1ScrubPointerMove||0,scrubUp:scene.__g1ScrubPointerUp||0,
+        faucetDown:scene.__g1FaucetPointerDown||0
+      }
+    });
 
     scene.time.addEvent({delay:40,loop:true,callback:()=>{
       if(target.active && soapPointerId===null && soap.active && (Math.abs(target.x-soap.x)>2 || Math.abs((target.y-3)-soap.y)>2)) target.setPosition(soap.x,soap.y+3);
