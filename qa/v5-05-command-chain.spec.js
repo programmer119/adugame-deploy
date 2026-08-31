@@ -21,11 +21,20 @@ test('strict command chain: G1 every guided state points to the next valid actio
   await dragL(page,r,[[205,350],[730,340],[770,340],[730,340],[770,340],[810,340],[850,340],[810,340],[850,340],[770,390],[730,390],[770,390],[730,390],[810,390],[850,390],[810,390],[850,390]],1300);await waitFor(page,()=>window.__ADUGAME_DEBUG__().step===2);await expectGuide(page,'세안천',205,480);
   await dragL(page,r,[[205,480],[720,320],[790,320],[720,320],[790,320],[720,320],[790,320],[720,320]],800);await waitFor(page,()=>window.__ADUGAME_DEBUG__().step===3);await expectGuide(page,'손톱',205,545);
 
-  r=await open(page,1,3);await expectGuide(page,'장난감',180,235);
-  for(const q of [[180,235],[315,235],[450,235]])await dragL(page,r,[q,[255,465]],170);
-  await waitFor(page,()=>window.__ADUGAME_DEBUG__().step===1);await expectGuide(page,'균형',560,250);
-  for(const q of [[560,250],[680,250],[800,250]])await dragL(page,r,[q,[735,475]],180);
-  await waitFor(page,()=>window.__ADUGAME_DEBUG__().step===2);
+  r=await open(page,1,3);await expectGuide(page,'장난감',190,270);
+  const toys=[[190,270],[305,270],[420,270]];
+  for(let i=0;i<toys.length;i++){
+    await dragL(page,r,[toys[i],[255,465]],170);
+    await waitFor(page,i<2?()=>window.__ADUGAME_DEBUG__().tidied.length===i+1:()=>window.__ADUGAME_DEBUG__().step===1);
+    if(i<2)await expectGuide(page,'장난감',toys[i+1][0],toys[i+1][1]);
+  }
+  await expectGuide(page,'균형',555,270);
+  const healthy=[[555,270],[670,270],[785,270]];
+  for(let i=0;i<healthy.length;i++){
+    await dragL(page,r,[healthy[i],[735,475]],180);
+    await waitFor(page,i<2?()=>window.__ADUGAME_DEBUG__().chosen.length===i+1:()=>window.__ADUGAME_DEBUG__().step===2);
+    if(i<2)await expectGuide(page,'균형',healthy[i+1][0],healthy[i+1][1]);
+  }
   const first=await page.evaluate(()=>{const s=window.__ADUGAME_SCENE__(),o=s.chosen[0];return{x:o.x,y:o.y,kind:o.kind};});await expectGuide(page,'캐릭터',first.x,first.y);
   await dragL(page,r,[[first.x,first.y],[1040,330]],190);await waitFor(page,()=>window.__ADUGAME_DEBUG__().fed.length===1);await page.waitForTimeout(80);
   const after=await page.evaluate(()=>{const s=window.__ADUGAME_SCENE__(),next=s.chosen.find(o=>!s.fed.has(o.kind));return{hint:s.hintTarget,status:s.status.text,next:next&&{x:next.x,y:next.y,kind:next.kind},fed:[...s.fed]};});
