@@ -79,7 +79,12 @@ test('v5 G1R1 exact state chain',async({page})=>{
   expect((await state(page,'soap')).step).toBe(3);
 
   const h=await livePoint(page,'hands');expect(h).toBeTruthy();
-  await dragL(page,r,[[h.x-70,h.y],[h.x+70,h.y],[h.x-70,h.y],[h.x+70,h.y],[h.x-70,h.y],[h.x+70,h.y],[h.x-70,h.y]],620);
+  // Runtime intentionally ignores single pointer jumps >=120 logical px as non-scrubbing motion.
+  // Use a realistic dense left/right gesture: 70px segments accumulate well past the 340px goal.
+  await dragL(page,r,[
+    [h.x-70,h.y],[h.x,h.y],[h.x+70,h.y],[h.x,h.y],[h.x-70,h.y],
+    [h.x,h.y],[h.x+70,h.y],[h.x,h.y],[h.x-70,h.y]
+  ],760);
   const scrubNow=await state(page,'scrub-immediate');
   expect(scrubNow.scrubDistance).toBeGreaterThanOrEqual(340);
   await waitFor(page,()=>window.__ADUGAME_DEBUG__()?.step===4);
