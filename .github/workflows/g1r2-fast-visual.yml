@@ -1,0 +1,29 @@
+name: G1R2 fast visual
+
+on:
+  push:
+    branches: [benchmark-v5]
+  workflow_dispatch:
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install test dependencies
+        run: npm install --no-audit --no-fund
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Capture G1R2 only
+        run: npx playwright test qa/g1r2-fast-visual.spec.js
+      - name: Upload G1R2 visual
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g1r2-fast-visual
+          path: qa/reports/g1r2-fast/G1R2-v12.png
+          if-no-files-found: error
