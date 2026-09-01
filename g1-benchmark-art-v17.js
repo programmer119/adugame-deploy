@@ -4,11 +4,11 @@
   if (typeof G1R2 !== 'function') return;
 
   const SRC={
-    scene:'https://openclipart.org/image/2000px/326445', // Children Brushing Teeth, oksmith, publicdomainq PD
-    paste:'https://openclipart.org/image/800px/158803', // Toothpaste tube, jhnri4
-    brush:'https://openclipart.org/image/800px/172856', // red cartoon toothbrush, bpcomp
-    cloth:'https://openclipart.org/image/800px/246477', // yellow sponge, Ilex
-    clipper:'https://openclipart.org/image/800px/318550' // Nail Clipper, algotruneman
+    scene:'https://openclipart.org/image/2000px/326445',
+    paste:'https://openclipart.org/image/800px/158803',
+    brush:'https://openclipart.org/image/800px/172856',
+    cloth:'https://openclipart.org/image/800px/246477',
+    clipper:'https://openclipart.org/image/800px/318550'
   };
   const STEPS=[
     ['치약','치약을 칫솔 위로 가져가 적당히 묻혀요'],
@@ -37,7 +37,6 @@
     if(scene.scene?.key!=='G1R2'||scene.__g1v17Root)return;
     const old=scene.__g1v14Dom?.root;if(old)old.style.display='none';
 
-    // Reposition only the real mechanic objects; their original event handlers stay authoritative.
     if(scene.brush){scene.brush.setPosition(1070,555);scene.brush.home={x:1070,y:555};scene.brush.setAlpha(.001).setVisible(true);}
     if(scene.paste){scene.paste.setPosition(910,555);scene.paste.home={x:910,y:555};scene.paste.setAlpha(.001).setVisible(true);}
     if(scene.cloth){scene.cloth.setPosition(1060,555);scene.cloth.home={x:1060,y:555};scene.cloth.setAlpha(.001).setVisible(true);}
@@ -46,7 +45,6 @@
     (scene.stains||[]).forEach(s=>s.setAlpha(.001).setVisible(true));
     if(scene.hand)scene.hand.setAlpha(.001).setVisible(true);
 
-    // Keep nail gameplay integrated into the full child scene: no detached hand/body-part visual.
     const nailPos=[[894,462],[914,452],[936,450],[958,454],[979,464]];
     (scene.nails||[]).forEach((n,i)=>{const p=nailPos[i]||[936,454];n.setPosition(p[0],p[1]).setAlpha(.001).setVisible(true);});
 
@@ -80,7 +78,6 @@
     Object.assign(status.style,{position:'absolute',left:'50%',bottom:'1.8%',transform:'translateX(-50%)',minWidth:'470px',maxWidth:'72%',textAlign:'center',padding:'12px 22px',borderRadius:'20px',background:'rgba(36,49,74,.93)',color:'#fff',fontSize:'17px',fontWeight:'900',boxShadow:'0 10px 24px rgba(36,49,74,.17)',zIndex:'10'});root.appendChild(status);
 
     document.body.appendChild(root);syncRoot(scene,root);scene.__g1v17Root=root;scene.v17Art='actual-brush-face-nails-public-domain';
-
     Promise.all([people,paste,brush,cloth,clipper].map(waitImage)).then(ok=>{root.dataset.ready=ok.every(Boolean)?'1':'fallback';});
 
     const sync=()=>{
@@ -89,9 +86,9 @@
       pills.forEach((p,i)=>{const active=i===Math.min(st,3),done=i<st||st>=4;p.style.background=active?'#24314a':done?'#b2f7ef':'rgba(255,255,255,.88)';p.style.color=active?'#fff':'#24314a';p.style.border=active?'2px solid #24314a':'2px solid rgba(36,49,74,.11)';p.style.transform=active?'translateY(-2px)':'none';});
       status.textContent=st>=4?'양치·세수·손톱 정리까지 모두 끝냈어요':STEPS[st][1];
 
-      // Same authored image, cropped by position: toothpaste girl for step 0/3, brushing boy for step 1/2.
       const boy=st===1||st===2;
-      place(people,boy?1006:565,374,900);people.style.filter=st===2?'saturate(.92) brightness(1.02)':'none';people.style.opacity=st>=4?'.96':'1';
+      // Boy crop is lifted so his authored mouth lands directly on the real hard-coded mouth target (790,365).
+      place(people,boy?1006:565,boy?239:374,900);people.style.filter=st===2?'saturate(.92) brightness(1.02)':'none';people.style.opacity=st>=4?'.96':'1';
 
       paste.style.display=st===0?'block':'none';brush.style.display=(st===0||st===1)?'block':'none';cloth.style.display=st===2?'block':'none';clipper.style.display=st===3?'block':'none';
       if(scene.paste&&st===0)place(paste,scene.paste.x,scene.paste.y,112,112,-8);
