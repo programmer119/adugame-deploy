@@ -2,6 +2,7 @@ const { test, expect } = require('@playwright/test');
 const fs=require('fs');
 const OFFICIAL='https://play-lh.googleusercontent.com/ZhT3SqfpofaxPlUUSlxPeUb0SbSVlfkA1LcubCNqdkXtb4FT4mZclYzFYC_7LW7eKA=w526-h296';
 const NAILS=[[665,568],[680,558],[695,554],[710,558],[725,568]];
+const FACE_LOOP=[[790,330],[735,330],[845,330],[735,345],[845,345],[735,315],[845,315],[790,330]];
 
 async function p(page,x,y){return page.evaluate(({x,y})=>{const c=document.querySelector('canvas');const r=c.getBoundingClientRect();return{x:r.left+x/1280*r.width,y:r.top+y/720*r.height};},{x,y});}
 async function drag(page,pts,steps=2){const q=[];for(const a of pts)q.push(await p(page,a[0],a[1]));await page.mouse.move(q[0].x,q[0].y);await page.mouse.down();for(const a of q.slice(1))await page.mouse.move(a.x,a.y,{steps});await page.mouse.up();}
@@ -10,7 +11,12 @@ async function snap(page,name){await page.waitForTimeout(100);await page.screens
 async function debug(page,name){const d=await page.evaluate(()=>({state:window.__ADUGAME_DEBUG__?.(),version:window.__ADUGAME_ART_SOURCE__?.G1R2?.version,generated:window.__ADUGAME_ART_SOURCE__?.G1R2?.generatedVisualAssets,ready:document.querySelector('#g1r2-v17-overlay')?.dataset.ready,objects:(()=>{const s=window.__ADUGAME_SCENE__?.();return {paste:s?.paste?{x:s.paste.x,y:s.paste.y}:null,brush:s?.brush?{x:s.brush.x,y:s.brush.y}:null,cloth:s?.cloth?{x:s.cloth.x,y:s.cloth.y}:null,clipper:s?.clipper?{x:s.clipper.x,y:s.clipper.y}:null,nails:(s?.nails||[]).map(n=>({x:n.x,y:n.y,i:n.nailIndex,active:n.active}))};})()}));fs.writeFileSync(`qa/reports/g1r2-fast/${name}.json`,JSON.stringify(d,null,2));return d;}
 async function ready(page){await page.goto('/index.html?game=1&round=2&e2e=1',{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>document.querySelector('#g1r2-v17-overlay')?.dataset.ready==='1',null,{timeout:30000});await page.waitForTimeout(220);const d=await debug(page,'DEBUG-ready');expect(d.generated).toBe(0);expect(d.version).toBe('v17.6');expect(d.state?.benchmarkV5).toBe('brush-face-nails');expect(d.state?.g1r2V17Input).toBeTruthy();return d;}
 async function brushQuadrant(page,name,pts,index){await drag(page,[[1040,570],...pts],1);await page.waitForTimeout(120);const d=await debug(page,`DEBUG-brush-${name}`);expect(d.state.mouthProgress[index]).toBeGreaterThanOrEqual(115);}
-async function washFaceUntilDone(page){let before=-1;for(let i=0;i<4;i++){const state=await page.evaluate(()=>window.__ADUGAME_DEBUG__?.());if(state?.step===3)return state;if(state?.step!==2)throw new Error(`expected facewash step 2, got ${state?.step}`);await drag(page,[[1110,420],[790,330],[735,330],[845,330],[735,345],[845,345],[735,315],[845,315],[790,330]],1);await page.waitForTimeout(130);const d=await debug(page,`DEBUG-facewash-${i+1}`);if(d.state.step===3)return d.state;expect(d.state.faceWash).toBeGreaterThan(before);before=d.state.faceWash;}await waitStep(page,3);return page.evaluate(()=>window.__ADUGAME_DEBUG__?.());}
+async function washFaceUntilDone(page){
+  const path=[[1110,420]];
+  for(let i=0;i<4;i++)path.push(...FACE_LOOP);
+  await drag(page,path,1);await waitStep(page,3);
+  const d=await debug(page,'DEBUG-facewash-done');expect(d.state.faceWash).toBeGreaterThanOrEqual(360);return d.state;
+}
 
 test('R2 v17.6 toothpaste-brush-facewash chain',async({page})=>{
   test.setTimeout(105000);fs.mkdirSync('qa/reports/g1r2-fast',{recursive:true});const start=await ready(page);expect(start.state.step).toBe(0);await snap(page,'STEP-0-toothpaste');
@@ -20,7 +26,7 @@ test('R2 v17.6 toothpaste-brush-facewash chain',async({page})=>{
   await brushQuadrant(page,'q2',[[745,390],[775,390],[735,410],[775,410],[735,390],[775,390],[735,410]],2);
   await brushQuadrant(page,'q3',[[825,390],[865,390],[815,410],[865,410],[815,390],[865,390],[815,410]],3);
   await waitStep(page,2);await snap(page,'STEP-2-facewash');
-  const faceDone=await washFaceUntilDone(page);expect(faceDone.step).toBe(3);expect(faceDone.faceWash).toBeGreaterThanOrEqual(360);await snap(page,'STEP-3-nails');const d=await debug(page,'DEBUG-chain-done');
+  const faceDone=await washFaceUntilDone(page);expect(faceDone.step).toBe(3);await snap(page,'STEP-3-nails');const d=await debug(page,'DEBUG-chain-done');
   expect(d.state.g1r2V17Input.pasteDown).toBe(1);expect(d.state.g1r2V17Input.brushMove).toBeGreaterThan(0);expect(d.state.g1r2V17Input.clothMove).toBeGreaterThan(0);
 });
 
