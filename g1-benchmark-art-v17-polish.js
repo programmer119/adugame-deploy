@@ -28,13 +28,12 @@
       if(!root.isConnected||scene.scene?.key!=='G1R2')return;
       const st=Number(scene.step)||0;
       if(st===2){
-        // Keep the active child's face fixed on the real face-wash target while cropping away the other child fragment.
-        people.style.clipPath='inset(0 0 0 58%)';
-        place(people,389,268,990);
+        // Lock the same face-wash target at 790,330 while zooming in enough to push the toothbrush/toothpaste action below the crop.
+        people.style.clipPath='inset(0 0 22% 60%)';
+        place(people,284,252,1250);
         people.style.filter='saturate(.96) brightness(1.035)';
       } else if(st===3){
-        // Keep the real nail target fixed while zooming into the child's lower arm/hand area.
-        // The brushing face is intentionally cropped out so the task reads as nail care, not brushing.
+        // Hidden by the dedicated authored raised-hand nail scene loaded after this patch.
         people.style.clipPath='inset(61% 67% 0 0)';
         place(people,1234,195,1456);
         people.style.filter='saturate(.98) brightness(1.02)';
