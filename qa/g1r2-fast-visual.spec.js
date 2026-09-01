@@ -2,15 +2,14 @@ const { test } = require('@playwright/test');
 
 const OFFICIAL='https://play-lh.googleusercontent.com/ZhT3SqfpofaxPlUUSlxPeUb0SbSVlfkA1LcubCNqdkXtb4FT4mZclYzFYC_7LW7eKA=w526-h296';
 const CANDIDATES=[
-  ['fira','https://upload.wikimedia.org/wikipedia/commons/f/fd/Aktivitas_Menggosok_Gigi_oleh_Fira.svg','Fira.adiba · CC BY-SA 4.0'],
-  ['satria','https://upload.wikimedia.org/wikipedia/commons/4/48/Ilustrasi_anak_sedang_menggosok_gigi.svg','Satriaraspati · CC BY-SA 4.0'],
-  ['ealita','https://upload.wikimedia.org/wikipedia/commons/e/ee/Aktivitas-Menggosok-Gigi-1.svg','Ealita · CC BY-SA 4.0'],
-  ['illustration','https://upload.wikimedia.org/wikipedia/commons/b/b3/Ilustrasi_Menggosok_Gigi.svg','Commons teaching illustration · CC BY-SA 4.0'],
-  ['naejaty','https://upload.wikimedia.org/wikipedia/commons/e/ec/Aktivitas_Menggosok_gigi.svg','Naejaty · CC BY-SA 4.0'],
-  ['maslanang','https://upload.wikimedia.org/wikipedia/commons/4/49/Menggosok-gigi.svg','Maslanangdev · CC BY-SA 4.0']
+  ['girl-sink','https://openclipart.org/image/800px/304275','j4p4n · Openclipart public domain'],
+  ['wash-boy','https://openclipart.org/image/800px/312394','oksmith · publicdomainq/Openclipart public domain'],
+  ['washing-guide','https://openclipart.org/image/800px/340331','j4p4n · EPA-derived public domain'],
+  ['family-wash','https://openclipart.org/image/800px/334443','j4p4n · Openclipart public domain'],
+  ['hands-soap','https://openclipart.org/image/800px/284271','oksmith · publicdomainq/Openclipart public domain']
 ];
 
-test('G1R2 licensed authored candidate cut', async ({page})=>{
+test('G1R2 handwashing authored candidate cut', async ({page})=>{
   test.setTimeout(90000);
   await page.setViewportSize({width:1280,height:720});
   require('fs').mkdirSync('qa/reports/g1r2-fast',{recursive:true});
@@ -25,12 +24,12 @@ test('G1R2 licensed authored candidate cut', async ({page})=>{
       .credit{position:absolute;right:14px;bottom:12px;z-index:2;background:rgba(0,0,0,.72);padding:6px 9px;border-radius:6px;font-size:12px}
       img{display:block;max-width:100%;max-height:100%;object-fit:contain}
     </style></head><body><div class="wrap">
-      <div class="side"><div class="label">BABY PANDA OFFICIAL · BRUSHING</div><img id="official" src="${OFFICIAL}"></div>
-      <div class="side candidate"><div class="label">CANDIDATE ${id.toUpperCase()}</div><img id="candidate" src="${url}"><div class="credit">${credit}</div></div>
+      <div class="side"><div class="label">BABY PANDA OFFICIAL · ACTION COMPOSITION</div><img id="official" src="${OFFICIAL}"></div>
+      <div class="side candidate"><div class="label">HANDWASH CANDIDATE ${id.toUpperCase()}</div><img id="candidate" src="${url}"><div class="credit">${credit}</div></div>
     </div></body></html>`,{waitUntil:'domcontentloaded'});
     const loaded=await page.evaluate(()=>Promise.all(['official','candidate'].map(id=>new Promise(resolve=>{const im=document.getElementById(id);if(im.complete)return resolve(im.naturalWidth>0);const t=setTimeout(()=>resolve(false),10000);im.onload=()=>{clearTimeout(t);resolve(true)};im.onerror=()=>{clearTimeout(t);resolve(false)};}))));
-    console.log('CANDIDATE',id,loaded);
+    console.log('HANDWASH_CANDIDATE',id,loaded);
     await page.waitForTimeout(250);
-    await page.screenshot({path:`qa/reports/g1r2-fast/CANDIDATE-${String(i+1).padStart(2,'0')}-${id}.png`});
+    await page.screenshot({path:`qa/reports/g1r2-fast/HANDWASH-${String(i+1).padStart(2,'0')}-${id}.png`});
   }
 });
