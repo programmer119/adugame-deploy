@@ -1,10 +1,9 @@
-// ADUGAME G1R2 v15.3 — existing authored assets only; ZERO generated/drawn visuals.
+// ADUGAME G1R2 v15.4 — existing authored assets only; ZERO generated/drawn visuals.
 (() => {
   if (typeof G1R2 !== 'function') return;
   const SRC={
-    bathroom:'https://img.itch.zone/aW1nLzE3MzUwNTY2LnBuZw==/original/vRzstl.png',
-    kid3d:'https://img.itch.zone/aW1nLzIzMzY3ODQwLmdpZg==/original/ooZOZ4.gif',
-    kidFallback:'https://raw.githubusercontent.com/Saba-Burduli/Petty/master/Petty/Petty/Resources/Characters/GameArt2DRedHatBoy/Frames/Idle/Idle_001.png',
+    bathroom:'https://img.itch.zone/aW1hZ2UvMTg1MDI3Mi8xMDg2MDYwOS5wbmc=/347x500/arRLKm.png',
+    kid:'https://raw.githubusercontent.com/Saba-Burduli/Petty/master/Petty/Petty/Resources/Characters/GameArt2DRedHatBoy/Frames/Idle/Idle_001.png',
     toothbrush:'https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@master/color/svg/1FAA5.svg',
     toothpaste:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Toothpaste%20tube.svg?width=512',
     sponge:'https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@master/color/svg/1F9FD.svg',
@@ -36,22 +35,23 @@
     const dom=scene?.__g1v14Dom;
     if(scene?.scene?.key!=='G1R2'||!dom?.root)return false;
     fullscreen(scene);
+    dom.root.style.borderRadius='0';
     dom.bg.src=SRC.bathroom;dom.bg.onerror=null;
-    dom.kid.src=SRC.kid3d;dom.kid.onerror=()=>{dom.kid.onerror=null;dom.kid.src=SRC.kidFallback;};
+    dom.kid.onerror=null;dom.kid.src=SRC.kid;
     dom.paste.src=SRC.toothpaste;dom.brush.src=SRC.toothbrush;dom.cloth.src=SRC.sponge;dom.clipper.src=SRC.clipper;dom.hand.src=SRC.hand;
-    dom.kid.style.height='64%';dom.kid.style.width='auto';dom.kid.style.left='69%';dom.kid.style.top='60%';dom.kid.style.transform='translate(-50%,-50%)';
+    dom.kid.style.height='61%';dom.kid.style.width='auto';dom.kid.style.left='72%';dom.kid.style.top='60%';dom.kid.style.transform='translate(-50%,-50%)';
     [dom.paste,dom.brush,dom.cloth,dom.clipper].forEach(el=>el.style.filter='drop-shadow(0 7px 7px rgba(20,40,70,.16))');
-    scene.v15Art='existing-assets-only-r2';
+    scene.v15Art='existing-assets-only-r2-2d';
     window.__ADUGAME_ART_SOURCE__=window.__ADUGAME_ART_SOURCE__||{};
     window.__ADUGAME_ART_SOURCE__.G1R2={
-      background:{name:'Tiny Treats - Bubbly Bathroom scene',author:'Tiny Treats',license:'CC0'},
-      character:{name:'Mr. RedHat - Low Poly Game Character preview',author:'Yoo Game Art',license:'CC0'},
+      background:{name:'2D bathroom candidate D',source:'itch.io authored asset',license:'existing external asset'},
+      character:{name:'Red Hat Boy',author:'pzUH / GameArt2D',license:'CC0'},
       props:{toothbrush:{source:'OpenMoji',license:'CC BY-SA 4.0'},sponge:{source:'OpenMoji',license:'CC BY-SA 4.0'},hand:{source:'OpenMoji',license:'CC BY-SA 4.0'},toothpaste:{name:'Toothpaste tube.svg',source:'Wikimedia Commons',license:'CC BY-SA 2.5'},clipper:{name:'Nail clipper.svg',source:'Wikimedia Commons/Openclipart',license:'CC0'}},
-      generatedVisualAssets:0,version:'v15.3',rendering:'existing external images only'
+      generatedVisualAssets:0,version:'v15.4',rendering:'existing external 2D images only'
     };
     return true;
   }
   const priorCreate=G1R2.prototype.create;
   G1R2.prototype.create=function(){priorCreate.call(this);const tryApply=()=>{if(!apply(this))this.time.delayedCall(120,tryApply);};this.time.delayedCall(430,tryApply);};
-  window.__ADUGAME_G1_BENCHMARK_ART_V15__={loaded:true,version:'15.3',generatedVisualAssets:0};
+  window.__ADUGAME_G1_BENCHMARK_ART_V15__={loaded:true,version:'15.4',generatedVisualAssets:0};
 })();
