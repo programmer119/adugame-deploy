@@ -1,169 +1,127 @@
-// ADUGAME G1R2 v17.2 — actual handwashing mechanic visual.
-// ZERO generated/drawn image assets. Authored public-domain images + CSS/UI layout only.
+// ADUGAME G1R2 v17.3 — actual HabitV5 mechanic: toothpaste -> brush -> face wash -> nails.
+// ZERO generated/drawn image assets. Only existing Openclipart CC0/public-domain images + CSS layout.
 (() => {
   if (typeof G1R2 !== 'function') return;
 
-  const SRC = {
-    child: 'https://openclipart.org/image/2000px/312394',
-    faucet: 'https://openclipart.org/image/800px/297877',
-    soap: 'https://openclipart.org/image/800px/307945',
-    towel: 'https://openclipart.org/image/800px/63067'
+  const SRC={
+    scene:'https://openclipart.org/image/2000px/326445', // Children Brushing Teeth, oksmith, publicdomainq PD
+    paste:'https://openclipart.org/image/800px/158803', // Toothpaste tube, jhnri4
+    brush:'https://openclipart.org/image/800px/172856', // red cartoon toothbrush, bpcomp
+    cloth:'https://openclipart.org/image/800px/246477', // yellow sponge, Ilex
+    clipper:'https://openclipart.org/image/800px/318550' // Nail Clipper, algotruneman
   };
-  const STEPS = [
-    ['물 묻히기','수도를 눌러 손을 먼저 적셔요'],
-    ['비누','비누를 손 위로 가져와요'],
-    ['문지르기','손을 좌우로 충분히 문질러요'],
-    ['헹구기','깨끗한 물로 한 번 더 헹궈요'],
-    ['닦기','수건으로 물기를 닦아요']
+  const STEPS=[
+    ['치약','치약을 칫솔 위로 가져가 적당히 묻혀요'],
+    ['양치','칫솔을 움직여 위·아래·양쪽 이를 골고루 닦아요'],
+    ['세수','세안천으로 얼굴을 부드럽게 닦아요'],
+    ['손톱','손톱 5개를 하나씩 정리해요']
   ];
 
-  function img(src, cls, alt=''){
-    const el=document.createElement('img');
-    el.src=src;el.className=cls;el.alt=alt;el.draggable=false;
-    Object.assign(el.style,{position:'absolute',pointerEvents:'none',userSelect:'none',objectFit:'contain'});
-    return el;
+  function img(src,cls,alt=''){
+    const e=document.createElement('img');e.src=src;e.className=cls;e.alt=alt;e.draggable=false;
+    Object.assign(e.style,{position:'absolute',pointerEvents:'none',userSelect:'none',objectFit:'contain'});return e;
   }
-  function pct(el,x,y,w,h){
-    el.style.left=`${x/12.8}%`;el.style.top=`${y/7.2}%`;
-    if(w!=null)el.style.width=`${w/12.8}%`;if(h!=null)el.style.height=`${h/7.2}%`;
-    el.style.transform='translate(-50%,-50%)';
+  function place(e,x,y,w,h=null,rot=0){
+    e.style.left=`${x/12.8}%`;e.style.top=`${y/7.2}%`;e.style.width=`${w/12.8}%`;
+    if(h!=null)e.style.height=`${h/7.2}%`;else e.style.height='auto';
+    e.style.transform=`translate(-50%,-50%) rotate(${rot}deg)`;
   }
   function syncRoot(scene,root){
-    const canvas=scene.game?.canvas;if(!canvas)return;
-    const r=canvas.getBoundingClientRect();
+    const c=scene.game?.canvas;if(!c)return;const r=c.getBoundingClientRect();
     Object.assign(root.style,{left:`${r.left}px`,top:`${r.top}px`,width:`${r.width}px`,height:`${r.height}px`});
   }
-  function pill(text){
-    const d=document.createElement('div');d.textContent=text;
-    Object.assign(d.style,{padding:'8px 12px',borderRadius:'999px',fontWeight:'900',fontSize:'13px',lineHeight:'1',whiteSpace:'nowrap',transition:'all .18s ease'});
-    return d;
-  }
-  function waitImage(el){
-    return new Promise(resolve=>{
-      if(el.complete)return resolve(el.naturalWidth>0);
-      const t=setTimeout(()=>resolve(false),10000);
-      el.onload=()=>{clearTimeout(t);resolve(true)};
-      el.onerror=()=>{clearTimeout(t);resolve(false)};
-    });
-  }
+  function waitImage(e){return new Promise(resolve=>{if(e.complete)return resolve(e.naturalWidth>0);const t=setTimeout(()=>resolve(false),12000);e.onload=()=>{clearTimeout(t);resolve(true)};e.onerror=()=>{clearTimeout(t);resolve(false)};});}
+  function pill(text){const d=document.createElement('div');d.textContent=text;Object.assign(d.style,{padding:'8px 13px',borderRadius:'999px',fontWeight:'900',fontSize:'13px',lineHeight:'1',whiteSpace:'nowrap',transition:'all .16s ease'});return d;}
 
   function mount(scene){
     if(scene.scene?.key!=='G1R2'||scene.__g1v17Root)return;
-    const old=scene.__g1v14Dom?.root;
-    if(old)old.style.display='none';
+    const old=scene.__g1v14Dom?.root;if(old)old.style.display='none';
 
-    // Invisible Phaser mechanics remain authoritative; visuals follow them 1:1.
-    scene.faucet?.setPosition(470,455);
-    if(scene.soap){scene.soap.setPosition(930,500);scene.soap.home={x:930,y:500};}
-    if(scene.towel){scene.towel.setPosition(265,500);scene.towel.home={x:265,y:500};}
-    scene.hands?.setPosition(650,455);
+    // Reposition only the real mechanic objects; their original event handlers stay authoritative.
+    if(scene.brush){scene.brush.setPosition(1070,555);scene.brush.home={x:1070,y:555};scene.brush.setAlpha(.001).setVisible(true);}
+    if(scene.paste){scene.paste.setPosition(910,555);scene.paste.home={x:910,y:555};scene.paste.setAlpha(.001).setVisible(true);}
+    if(scene.cloth){scene.cloth.setPosition(1060,555);scene.cloth.home={x:1060,y:555};scene.cloth.setAlpha(.001).setVisible(true);}
+    if(scene.clipper){scene.clipper.setPosition(1070,555);scene.clipper.home={x:1070,y:555};scene.clipper.setAlpha(.001).setVisible(true);}
+    if(scene.mouth)scene.mouth.setAlpha(.001).setVisible(true);
+    (scene.stains||[]).forEach(s=>s.setAlpha(.001).setVisible(true));
+    if(scene.hand)scene.hand.setAlpha(.001).setVisible(true);
+
+    // Keep nail gameplay integrated into the full child scene: no detached hand/body-part visual.
+    const nailPos=[[894,462],[914,452],[936,450],[958,454],[979,464]];
+    (scene.nails||[]).forEach((n,i)=>{const p=nailPos[i]||[936,454];n.setPosition(p[0],p[1]).setAlpha(.001).setVisible(true);});
 
     const root=document.createElement('div');
-    root.id='g1r2-v17-overlay';root.dataset.generatedVisualAssets='0';root.dataset.ready='0';root.dataset.version='17.2';
-    Object.assign(root.style,{position:'fixed',overflow:'hidden',pointerEvents:'none',zIndex:'82',background:'#dff4f8',fontFamily:'Arial, sans-serif',color:'#24314a'});
+    root.id='g1r2-v17-overlay';root.dataset.generatedVisualAssets='0';root.dataset.ready='0';root.dataset.version='17.3';
+    Object.assign(root.style,{position:'fixed',overflow:'hidden',pointerEvents:'none',zIndex:'82',background:'#dff5fa',fontFamily:'Arial, sans-serif',color:'#24314a'});
+    document.querySelector('.stage-shell')?.style.setProperty('background','#dff5fa');
 
-    const sceneCard=document.createElement('div');
-    Object.assign(sceneCard.style,{position:'absolute',left:'6.5%',right:'6.5%',top:'9.8%',bottom:'7.5%',background:'#fbfeff',borderRadius:'30px',boxShadow:'0 20px 52px rgba(36,49,74,.13)',border:'3px solid rgba(36,49,74,.07)',overflow:'hidden'});
-    root.appendChild(sceneCard);
+    const room=document.createElement('div');
+    Object.assign(room.style,{position:'absolute',left:'3.4%',right:'3.4%',top:'9.5%',bottom:'7.2%',overflow:'hidden',borderRadius:'30px',background:'linear-gradient(180deg,#eefbfe 0%,#fffdf8 72%,#f7e9c9 100%)',border:'3px solid rgba(36,49,74,.07)',boxShadow:'0 20px 48px rgba(36,49,74,.11)'});
+    root.appendChild(room);
 
-    const title=document.createElement('div');title.textContent='깨끗하게 손 씻기';
-    Object.assign(title.style,{position:'absolute',left:'4%',top:'2.9%',fontSize:'30px',fontWeight:'900',letterSpacing:'-1px',zIndex:'7'});root.appendChild(title);
+    const title=document.createElement('div');title.textContent='양치 · 세수 · 손톱 정리';
+    Object.assign(title.style,{position:'absolute',left:'3.8%',top:'2.7%',fontSize:'29px',fontWeight:'900',letterSpacing:'-1.1px',zIndex:'9'});root.appendChild(title);
 
-    const stepbar=document.createElement('div');
-    Object.assign(stepbar.style,{position:'absolute',right:'3.8%',top:'3.1%',display:'flex',gap:'6px',zIndex:'7'});
+    const stepbar=document.createElement('div');Object.assign(stepbar.style,{position:'absolute',right:'3.7%',top:'3%',display:'flex',gap:'7px',zIndex:'9'});
     const pills=STEPS.map((s,i)=>{const p=pill(`${i+1} ${s[0]}`);stepbar.appendChild(p);return p;});root.appendChild(stepbar);
 
-    // The authored handwashing child now owns almost the whole scene.
-    const child=img(SRC.child,'g1v17-child','child washing hands');
-    Object.assign(child.style,{height:'104%',width:'auto',left:'51.8%',top:'45.8%',transform:'translate(-50%,-50%) scale(1)',transformOrigin:'50% 58%',zIndex:'2',transition:'filter .18s ease'});sceneCard.appendChild(child);
-
-    const faucet=img(SRC.faucet,'g1v17-faucet','water faucet');pct(faucet,470,455,136,106);faucet.style.transform='translate(-50%,-50%) scaleX(-1)';faucet.style.zIndex='5';root.appendChild(faucet);
-    const soap=img(SRC.soap,'g1v17-soap','hand soap');pct(soap,930,500,112,132);soap.style.zIndex='6';root.appendChild(soap);
-    const towel=img(SRC.towel,'g1v17-towel','towel');pct(towel,265,500,164,164);towel.style.zIndex='6';root.appendChild(towel);
+    const people=img(SRC.scene,'g1v17-scene','children brushing teeth');people.style.zIndex='2';people.style.transition='left .24s ease,top .24s ease,width .24s ease,filter .18s ease,opacity .18s ease';root.appendChild(people);
+    const paste=img(SRC.paste,'g1v17-paste','toothpaste');const brush=img(SRC.brush,'g1v17-brush','toothbrush');const cloth=img(SRC.cloth,'g1v17-cloth','face sponge');const clipper=img(SRC.clipper,'g1v17-clipper','nail clipper');
+    [paste,brush,cloth,clipper].forEach((e,i)=>{e.style.zIndex=6+i;root.appendChild(e);});
 
     const focus=document.createElement('div');
-    Object.assign(focus.style,{position:'absolute',borderRadius:'34px',border:'5px solid rgba(66,188,205,.72)',boxShadow:'0 0 0 10px rgba(123,223,242,.16)',transform:'translate(-50%,-50%)',zIndex:'4',transition:'left .16s ease,top .16s ease,width .16s ease,height .16s ease,opacity .15s ease',opacity:'0'});root.appendChild(focus);
-    const setFocus=(x,y,w,h,on=true)=>{
-      focus.style.left=`${x/12.8}%`;focus.style.top=`${y/7.2}%`;
-      focus.style.width=`${w/12.8}%`;focus.style.height=`${h/7.2}%`;
-      focus.style.opacity=on?'1':'0';
-    };
+    Object.assign(focus.style,{position:'absolute',transform:'translate(-50%,-50%)',border:'5px solid rgba(52,180,205,.72)',boxShadow:'0 0 0 10px rgba(123,223,242,.15)',borderRadius:'38px',zIndex:'5',transition:'all .16s ease',opacity:'0'});root.appendChild(focus);
+    const setFocus=(x,y,w,h,on=true)=>{focus.style.left=`${x/12.8}%`;focus.style.top=`${y/7.2}%`;focus.style.width=`${w/12.8}%`;focus.style.height=`${h/7.2}%`;focus.style.opacity=on?'1':'0';};
 
-    const water=document.createElement('div');
-    Object.assign(water.style,{position:'absolute',left:`${535/12.8}%`,top:`${474/7.2}%`,width:'13px',height:'94px',transform:'translateX(-50%)',borderRadius:'9px',background:'rgba(65,190,224,.66)',boxShadow:'0 0 17px rgba(65,190,224,.32)',opacity:'0',zIndex:'4',transition:'opacity .1s ease'});root.appendChild(water);
+    const progress=document.createElement('div');
+    Object.assign(progress.style,{position:'absolute',left:'50%',bottom:'8.5%',transform:'translateX(-50%)',fontSize:'14px',fontWeight:'900',color:'#42657a',zIndex:'9',background:'rgba(255,255,255,.86)',padding:'7px 12px',borderRadius:'999px',opacity:'0',transition:'opacity .15s ease'});root.appendChild(progress);
 
     const status=document.createElement('div');
-    Object.assign(status.style,{position:'absolute',left:'50%',bottom:'1.9%',transform:'translateX(-50%)',minWidth:'430px',maxWidth:'68%',textAlign:'center',padding:'12px 22px',borderRadius:'20px',background:'rgba(36,49,74,.92)',color:'#fff',fontSize:'17px',fontWeight:'900',boxShadow:'0 10px 24px rgba(36,49,74,.16)',zIndex:'8'});root.appendChild(status);
+    Object.assign(status.style,{position:'absolute',left:'50%',bottom:'1.8%',transform:'translateX(-50%)',minWidth:'470px',maxWidth:'72%',textAlign:'center',padding:'12px 22px',borderRadius:'20px',background:'rgba(36,49,74,.93)',color:'#fff',fontSize:'17px',fontWeight:'900',boxShadow:'0 10px 24px rgba(36,49,74,.17)',zIndex:'10'});root.appendChild(status);
 
-    document.body.appendChild(root);syncRoot(scene,root);
-    scene.__g1v17Root=root;scene.v17Art='public-domain-handwashing-scene';
+    document.body.appendChild(root);syncRoot(scene,root);scene.__g1v17Root=root;scene.v17Art='actual-brush-face-nails-public-domain';
 
-    Promise.all([waitImage(child),waitImage(faucet),waitImage(soap),waitImage(towel)])
-      .then(ok=>{root.dataset.ready=ok.every(Boolean)?'1':'fallback';});
+    Promise.all([people,paste,brush,cloth,clipper].map(waitImage)).then(ok=>{root.dataset.ready=ok.every(Boolean)?'1':'fallback';});
 
     const sync=()=>{
       if(!scene.sys?.isActive()||scene.scene?.key!=='G1R2'||!root.isConnected)return;
-      syncRoot(scene,root);
-      const st=Math.max(0,Math.min(5,Number(scene.step)||0));
-      pills.forEach((p,i)=>{
-        const active=i===Math.min(st,4),done=i<st||st>=5;
-        p.style.background=active?'#24314a':done?'#b2f7ef':'rgba(255,255,255,.84)';
-        p.style.color=active?'#fff':'#24314a';
-        p.style.border=active?'2px solid #24314a':'2px solid rgba(36,49,74,.10)';
-        p.style.transform=active?'translateY(-2px)':'none';
-      });
-      status.textContent=st>=5?'깨끗하게 끝!':STEPS[st][1];
+      syncRoot(scene,root);const st=Math.max(0,Math.min(4,Number(scene.step)||0));
+      pills.forEach((p,i)=>{const active=i===Math.min(st,3),done=i<st||st>=4;p.style.background=active?'#24314a':done?'#b2f7ef':'rgba(255,255,255,.88)';p.style.color=active?'#fff':'#24314a';p.style.border=active?'2px solid #24314a':'2px solid rgba(36,49,74,.11)';p.style.transform=active?'translateY(-2px)':'none';});
+      status.textContent=st>=4?'양치·세수·손톱 정리까지 모두 끝냈어요':STEPS[st][1];
 
-      const waterStep=st===0||st===3;
-      faucet.style.display=waterStep?'block':'none';
-      soap.style.display=st===1?'block':'none';
-      towel.style.display=st===4?'block':'none';
-      water.style.opacity=(scene.waterStream?.alpha||0)>.05?'1':'0';
+      // Same authored image, cropped by position: toothpaste girl for step 0/3, brushing boy for step 1/2.
+      const boy=st===1||st===2;
+      place(people,boy?1006:565,374,900);people.style.filter=st===2?'saturate(.92) brightness(1.02)':'none';people.style.opacity=st>=4?'.96':'1';
 
-      if(scene.faucet){
-        scene.faucet.setPosition(470,455);
-        if(waterStep){scene.hintTarget={x:470,y:455};setFocus(470,455,154,124,true);}
-      }
-      if(scene.soap){
-        pct(soap,scene.soap.x,scene.soap.y,112,132);
-        if(st===1){scene.hintTarget={x:scene.soap.x,y:scene.soap.y};setFocus(scene.soap.x,scene.soap.y,142,158,true);}
-      }
-      if(st===2){
-        scene.hintTarget={x:650,y:455};setFocus(650,455,220,138,true);
-        const pulse=1+Math.sin(scene.time.now/105)*.009;
-        child.style.transform=`translate(-50%,-50%) scale(${pulse.toFixed(4)})`;
-        child.style.filter='drop-shadow(0 8px 10px rgba(66,188,205,.14))';
-      }else{
-        child.style.transform=st>=5?'translate(-50%,-50%) scale(1.018)':'translate(-50%,-50%) scale(1)';
-        child.style.filter='none';
-      }
-      if(st===3){setFocus(470,455,154,124,true);}
-      if(scene.towel){
-        pct(towel,scene.towel.x,scene.towel.y,164,164);
-        if(st===4){scene.hintTarget={x:scene.towel.x,y:scene.towel.y};setFocus(scene.towel.x,scene.towel.y,185,185,true);}
-      }
-      if(st>=5)setFocus(650,455,220,138,false);
+      paste.style.display=st===0?'block':'none';brush.style.display=(st===0||st===1)?'block':'none';cloth.style.display=st===2?'block':'none';clipper.style.display=st===3?'block':'none';
+      if(scene.paste&&st===0)place(paste,scene.paste.x,scene.paste.y,112,112,-8);
+      if(scene.brush&&(st===0||st===1))place(brush,scene.brush.x,scene.brush.y,138,92,-10);
+      if(scene.cloth&&st===2)place(cloth,scene.cloth.x,scene.cloth.y,128,128,5);
+      if(scene.clipper&&st===3)place(clipper,scene.clipper.x,scene.clipper.y,128,128,18);
+
+      progress.style.opacity='1';
+      if(st===0){setFocus(scene.paste?.x||910,scene.paste?.y||555,142,126,true);progress.textContent='치약을 칫솔까지 드래그';scene.hintTarget={x:scene.paste?.x||910,y:scene.paste?.y||555};}
+      else if(st===1){setFocus(790,365,224,154,true);const q=(scene.mouthProgress||[0,0,0,0]).filter(v=>v>=115).length;progress.textContent=`양치 구역 ${q}/4`;scene.hintTarget={x:scene.brush?.x||1070,y:scene.brush?.y||555};}
+      else if(st===2){setFocus(790,330,260,240,true);const n=Math.min(100,Math.round((scene.faceWash||0)/360*100));progress.textContent=`세수 ${n}%`;scene.hintTarget={x:scene.cloth?.x||1060,y:scene.cloth?.y||555};}
+      else if(st===3){setFocus(936,457,176,112,true);progress.textContent=`손톱 ${scene.clipped?.size||0}/5`;scene.hintTarget={x:scene.clipper?.x||1070,y:scene.clipper?.y||555};}
+      else{setFocus(790,365,220,150,false);progress.textContent='모두 완료';}
     };
     sync();scene.events.on('postupdate',sync);scene.scale?.on?.('resize',sync);
 
-    const cleanup=()=>{root.remove();if(old)old.style.display='';scene.__g1v17Root=null;};
-    scene.events.once('shutdown',cleanup);scene.events.once('destroy',cleanup);
+    const cleanup=()=>{root.remove();if(old)old.style.display='';scene.__g1v17Root=null;};scene.events.once('shutdown',cleanup);scene.events.once('destroy',cleanup);
 
     window.__ADUGAME_ART_SOURCE__=window.__ADUGAME_ART_SOURCE__||{};
     window.__ADUGAME_ART_SOURCE__.G1R2={
-      scene:{name:'Wash your hands (#4)',author:'oksmith',source:'Openclipart / publicdomainq.net',license:'public domain'},
-      faucet:{name:'Tap (#1)',author:'oksmith',source:'Openclipart / publicdomainvectors.org',license:'public domain'},
-      soap:{name:'Soap Bottle',author:'j4p4n',source:'Openclipart',license:'public domain'},
-      towel:{name:'Towel',author:'mazeo',source:'Openclipart',license:'public domain'},
-      mechanic:'wet → soap → scrub → rinse → towel',version:'v17.2',generatedVisualAssets:0,rendering:'authored images + CSS UI'
+      scene:{name:'Children Brushing Teeth',author:'oksmith',source:'Openclipart / publicdomainq.net',license:'CC0/Public Domain'},
+      paste:{name:'Toothpaste tube',author:'jhnri4',source:'Openclipart',license:'CC0/Public Domain'},
+      brush:{name:'toothbrush',author:'bpcomp',source:'Openclipart',license:'CC0/Public Domain'},
+      cloth:{name:'Schwamm col (sponge)',author:'Ilex',source:'Openclipart',license:'CC0/Public Domain'},
+      clipper:{name:'Nail Clipper',author:'algotruneman',source:'Openclipart',license:'CC0/Public Domain'},
+      mechanic:'toothpaste -> 4-zone brushing -> face wash -> 5 nail clips',version:'v17.3',generatedVisualAssets:0,rendering:'authored images + CSS layout only'
     };
   }
 
   const priorCreate=G1R2.prototype.create;
-  G1R2.prototype.create=function(){
-    priorCreate.call(this);
-    const tryMount=()=>{if(this.scene?.key!=='G1R2')return;if(this.__g1v14Dom)mount(this);else this.time.delayedCall(120,tryMount);};
-    this.time.delayedCall(650,tryMount);
-  };
-  window.__ADUGAME_G1_BENCHMARK_ART_V17__={loaded:true,version:'17.2',generatedVisualAssets:0};
+  G1R2.prototype.create=function(){priorCreate.call(this);const tryMount=()=>{if(this.scene?.key!=='G1R2')return;if(this.__g1v14Dom)mount(this);else this.time.delayedCall(120,tryMount);};this.time.delayedCall(650,tryMount);};
+  window.__ADUGAME_G1_BENCHMARK_ART_V17__={loaded:true,version:'17.3',generatedVisualAssets:0};
 })();
