@@ -1,4 +1,4 @@
-// ADUGAME G1R2 v17.3 — actual HabitV5 mechanic: toothpaste -> brush -> face wash -> nails.
+// ADUGAME G1R2 v17.4 — actual HabitV5 mechanic: toothpaste -> brush -> face wash -> nails.
 // ZERO generated/drawn image assets. Only existing Openclipart CC0/public-domain images + CSS layout.
 (() => {
   if (typeof G1R2 !== 'function') return;
@@ -16,6 +16,7 @@
     ['세수','세안천으로 얼굴을 부드럽게 닦아요'],
     ['손톱','손톱 5개를 하나씩 정리해요']
   ];
+  const NAIL_POS=[[665,568],[680,558],[695,554],[710,558],[725,568]];
 
   function img(src,cls,alt=''){
     const e=document.createElement('img');e.src=src;e.className=cls;e.alt=alt;e.draggable=false;
@@ -42,11 +43,9 @@
     if(scene.mouth)scene.mouth.setAlpha(.001).setVisible(true);
     (scene.stains||[]).forEach(s=>s.setAlpha(.001).setVisible(true));
     if(scene.hand)scene.hand.setAlpha(.001).setVisible(true);
+    (scene.nails||[]).forEach((n,i)=>{const p=NAIL_POS[i]||NAIL_POS[2];n.setPosition(p[0],p[1]).setAlpha(.001).setVisible(true);});
 
-    const nailPos=[[894,462],[914,452],[936,450],[958,454],[979,464]];
-    (scene.nails||[]).forEach((n,i)=>{const p=nailPos[i]||[936,454];n.setPosition(p[0],p[1]).setAlpha(.001).setVisible(true);});
-
-    const root=document.createElement('div');root.id='g1r2-v17-overlay';root.dataset.generatedVisualAssets='0';root.dataset.ready='0';root.dataset.version='17.3';
+    const root=document.createElement('div');root.id='g1r2-v17-overlay';root.dataset.generatedVisualAssets='0';root.dataset.ready='0';root.dataset.version='17.4';
     Object.assign(root.style,{position:'fixed',overflow:'hidden',pointerEvents:'none',zIndex:'82',background:'#dff5fa',fontFamily:'Arial, sans-serif',color:'#24314a'});
     document.querySelector('.stage-shell')?.style.setProperty('background','#dff5fa');
 
@@ -76,15 +75,15 @@
       if(st===0){setFocus(scene.paste?.x||880,scene.paste?.y||570,142,126,true);progress.textContent='치약을 칫솔까지 드래그';scene.hintTarget={x:scene.paste?.x||880,y:scene.paste?.y||570};}
       else if(st===1){setFocus(790,365,224,154,true);const q=(scene.mouthProgress||[0,0,0,0]).filter(v=>v>=115).length;progress.textContent=`양치 구역 ${q}/4`;scene.hintTarget={x:scene.brush?.x||1040,y:scene.brush?.y||570};}
       else if(st===2){setFocus(790,330,260,240,true);const n=Math.min(100,Math.round((scene.faceWash||0)/360*100));progress.textContent=`세수 ${n}%`;scene.hintTarget={x:scene.cloth?.x||1110,y:scene.cloth?.y||420};}
-      else if(st===3){setFocus(936,457,176,112,true);progress.textContent=`손톱 ${scene.clipped?.size||0}/5`;scene.hintTarget={x:scene.clipper?.x||1110,y:scene.clipper?.y||270};}
+      else if(st===3){setFocus(695,562,170,104,true);progress.textContent=`손톱 ${scene.clipped?.size||0}/5`;scene.hintTarget={x:scene.clipper?.x||1110,y:scene.clipper?.y||270};}
       else{setFocus(790,365,220,150,false);progress.textContent='모두 완료';}
     };
     sync();scene.events.on('postupdate',sync);scene.scale?.on?.('resize',sync);
     const cleanup=()=>{root.remove();if(old)old.style.display='';scene.__g1v17Root=null;};scene.events.once('shutdown',cleanup);scene.events.once('destroy',cleanup);
 
-    window.__ADUGAME_ART_SOURCE__=window.__ADUGAME_ART_SOURCE__||{};window.__ADUGAME_ART_SOURCE__.G1R2={scene:{name:'Children Brushing Teeth',author:'oksmith',source:'Openclipart / publicdomainq.net',license:'CC0/Public Domain'},paste:{name:'Toothpaste tube',author:'jhnri4',source:'Openclipart',license:'CC0/Public Domain'},brush:{name:'toothbrush',author:'bpcomp',source:'Openclipart',license:'CC0/Public Domain'},cloth:{name:'Schwamm col (sponge)',author:'Ilex',source:'Openclipart',license:'CC0/Public Domain'},clipper:{name:'Nail Clipper',author:'algotruneman',source:'Openclipart',license:'CC0/Public Domain'},mechanic:'toothpaste -> 4-zone brushing -> face wash -> 5 nail clips',version:'v17.3',generatedVisualAssets:0,rendering:'authored images + CSS layout only'};
+    window.__ADUGAME_ART_SOURCE__=window.__ADUGAME_ART_SOURCE__||{};window.__ADUGAME_ART_SOURCE__.G1R2={scene:{name:'Children Brushing Teeth',author:'oksmith',source:'Openclipart / publicdomainq.net',license:'CC0/Public Domain'},paste:{name:'Toothpaste tube',author:'jhnri4',source:'Openclipart',license:'CC0/Public Domain'},brush:{name:'toothbrush',author:'bpcomp',source:'Openclipart',license:'CC0/Public Domain'},cloth:{name:'Schwamm col (sponge)',author:'Ilex',source:'Openclipart',license:'CC0/Public Domain'},clipper:{name:'Nail Clipper',author:'algotruneman',source:'Openclipart',license:'CC0/Public Domain'},mechanic:'toothpaste -> 4-zone brushing -> face wash -> 5 nail clips',version:'v17.4',generatedVisualAssets:0,rendering:'authored images + CSS layout only'};
   }
 
   const priorCreate=G1R2.prototype.create;G1R2.prototype.create=function(){priorCreate.call(this);const tryMount=()=>{if(this.scene?.key!=='G1R2')return;if(this.__g1v14Dom)mount(this);else this.time.delayedCall(120,tryMount);};this.time.delayedCall(650,tryMount);};
-  window.__ADUGAME_G1_BENCHMARK_ART_V17__={loaded:true,version:'17.3',generatedVisualAssets:0};
+  window.__ADUGAME_G1_BENCHMARK_ART_V17__={loaded:true,version:'17.4',generatedVisualAssets:0};
 })();
