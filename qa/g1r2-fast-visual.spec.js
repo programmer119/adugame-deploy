@@ -5,14 +5,22 @@ const OFFICIAL='https://play-lh.googleusercontent.com/ZhT3SqfpofaxPlUUSlxPeUb0Sb
 async function p(page,x,y){
   return page.evaluate(({x,y})=>{const c=document.querySelector('canvas');const r=c.getBoundingClientRect();return{x:r.left+x/1280*r.width,y:r.top+y/720*r.height};},{x,y});
 }
-async function clickLogical(page,x,y){const q=await p(page,x,y);await page.mouse.click(q.x,q.y);}
+async function clickLogical(page,x,y){const q=await p(page,x,y);await page.mouse.click(q.x,q.y);return q;}
 async function dragLogical(page,pts){
   const mapped=[];for(const [x,y] of pts)mapped.push(await p(page,x,y));
   await page.mouse.move(mapped[0].x,mapped[0].y);await page.mouse.down();
   for(const q of mapped.slice(1))await page.mouse.move(q.x,q.y,{steps:5});
   await page.mouse.up();
 }
-async function waitText(page,text){await page.waitForFunction(t=>document.querySelector('#g1r2-v17-overlay')?.textContent?.includes(t),text,{timeout:10000});}
+async function waitStep(page,step){await page.waitForFunction(s=>window.__ADUGAME_DEBUG__?.()?.step===s,step,{timeout:10000});}
+async function dump(page,name,extra={}){
+  const d=await page.evaluate(()=>{
+    const s=window.__ADUGAME_SCENE__?.();const c=document.querySelector('canvas');const r=c?.getBoundingClientRect();
+    const b=s?.faucet?.getBounds?.();
+    return {state:window.__ADUGAME_DEBUG__?.(),faucet:{x:s?.faucet?.x,y:s?.faucet?.y,bounds:b?{x:b.x,y:b.y,width:b.width,height:b.height}:null,inputEnabled:!!s?.faucet?.input?.enabled},canvas:r?{left:r.left,top:r.top,width:r.width,height:r.height}:null,version:window.__ADUGAME_ART_SOURCE__?.G1R2?.version};
+  });
+  fs.writeFileSync(`qa/reports/g1r2-fast/${name}.json`,JSON.stringify({...d,...extra},null,2));return d;
+}
 async function ready(page){
   await page.goto('/index.html?game=1&round=2&e2e=1',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>document.querySelector('#g1r2-v17-overlay')?.dataset.ready==='1',null,{timeout:25000});
@@ -24,23 +32,26 @@ async function ready(page){
 test('actual G1R2 v17.2 visual + full wash interaction',async({page})=>{
   test.setTimeout(90000);fs.mkdirSync('qa/reports/g1r2-fast',{recursive:true});
   await ready(page);
+  await dump(page,'DEBUG-0-before');
   await page.screenshot({path:'qa/reports/g1r2-fast/STEP-0-wet.png',fullPage:true});
 
-  await clickLogical(page,470,455);await waitText(page,'비누를 손 위로 가져와요');await page.waitForTimeout(180);
+  const click0=await clickLogical(page,470,455);await page.waitForTimeout(800);const afterClick=await dump(page,'DEBUG-1-after-faucet',{click0});
+  await page.screenshot({path:'qa/reports/g1r2-fast/DEBUG-1-after-faucet.png',fullPage:true});
+  expect(afterClick.state?.step).toBe(1);await waitStep(page,1);
   await page.screenshot({path:'qa/reports/g1r2-fast/STEP-1-soap.png',fullPage:true});
 
-  await dragLogical(page,[[930,500],[840,490],[750,475],[650,455]]);await waitText(page,'손을 좌우로 충분히 문질러요');await page.waitForTimeout(180);
+  await dragLogical(page,[[930,500],[840,490],[750,475],[650,455]]);await waitStep(page,2);await page.waitForTimeout(180);
   await page.screenshot({path:'qa/reports/g1r2-fast/STEP-2-scrub.png',fullPage:true});
 
   const scrub=[[600,455],[710,455],[585,455],[715,455],[585,455],[715,455],[585,455],[715,455],[590,455]];
-  await dragLogical(page,scrub);await waitText(page,'깨끗한 물로 한 번 더 헹궈요');await page.waitForTimeout(180);
+  await dragLogical(page,scrub);await waitStep(page,3);await page.waitForTimeout(180);
   await page.screenshot({path:'qa/reports/g1r2-fast/STEP-3-rinse.png',fullPage:true});
 
-  await clickLogical(page,470,455);await waitText(page,'수건으로 물기를 닦아요');await page.waitForTimeout(180);
+  await clickLogical(page,470,455);await waitStep(page,4);await page.waitForTimeout(180);
   await page.screenshot({path:'qa/reports/g1r2-fast/STEP-4-towel.png',fullPage:true});
 
   await dragLogical(page,[[265,500],[470,480],[590,460],[710,455],[585,455],[715,455],[585,455],[715,455]]);
-  await waitText(page,'깨끗하게 끝!');await page.waitForTimeout(120);
+  await waitStep(page,5);await page.waitForTimeout(120);
   await page.screenshot({path:'qa/reports/g1r2-fast/STEP-5-done.png',fullPage:true});
 });
 
