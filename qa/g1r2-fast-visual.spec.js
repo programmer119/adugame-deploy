@@ -1,35 +1,11 @@
 const { test } = require('@playwright/test');
-
 const OFFICIAL='https://play-lh.googleusercontent.com/ZhT3SqfpofaxPlUUSlxPeUb0SbSVlfkA1LcubCNqdkXtb4FT4mZclYzFYC_7LW7eKA=w526-h296';
 const CANDIDATES=[
-  ['girl-sink','https://openclipart.org/image/800px/304275','j4p4n · Openclipart public domain'],
-  ['wash-boy','https://openclipart.org/image/800px/312394','oksmith · publicdomainq/Openclipart public domain'],
-  ['washing-guide','https://openclipart.org/image/800px/340331','j4p4n · EPA-derived public domain'],
-  ['family-wash','https://openclipart.org/image/800px/334443','j4p4n · Openclipart public domain'],
-  ['hands-soap','https://openclipart.org/image/800px/284271','oksmith · publicdomainq/Openclipart public domain']
+ ['wash-boy','https://openclipart.org/image/2000px/312394','oksmith · publicdomainq/Openclipart public domain'],
+ ['pdq-boy','https://sun.publicdomainq.net/202001/27o/publicdomainq-0042284ufaoev.png','PublicDomainQ · CC0 public domain'],
+ ['color-guide','https://openclipart.org/image/2000px/341261','j4p4n · EPA public-domain colour remix']
 ];
-
-test('G1R2 handwashing authored candidate cut', async ({page})=>{
-  test.setTimeout(90000);
-  await page.setViewportSize({width:1280,height:720});
-  require('fs').mkdirSync('qa/reports/g1r2-fast',{recursive:true});
-  for(let i=0;i<CANDIDATES.length;i++){
-    const [id,url,credit]=CANDIDATES[i];
-    await page.setContent(`<!doctype html><html><head><meta charset="utf-8"><style>
-      *{box-sizing:border-box}body{margin:0;background:#111;font-family:Arial,sans-serif;color:#fff;overflow:hidden}
-      .wrap{width:1280px;height:720px;display:grid;grid-template-columns:1fr 1fr;gap:4px;background:#111}
-      .side{position:relative;display:flex;align-items:center;justify-content:center;background:#222;overflow:hidden;padding:20px}
-      .candidate{background:#f7fbff}
-      .label{position:absolute;left:14px;top:12px;z-index:2;background:rgba(0,0,0,.76);padding:7px 10px;border-radius:6px;font-weight:700;font-size:15px}
-      .credit{position:absolute;right:14px;bottom:12px;z-index:2;background:rgba(0,0,0,.72);padding:6px 9px;border-radius:6px;font-size:12px}
-      img{display:block;max-width:100%;max-height:100%;object-fit:contain}
-    </style></head><body><div class="wrap">
-      <div class="side"><div class="label">BABY PANDA OFFICIAL · ACTION COMPOSITION</div><img id="official" src="${OFFICIAL}"></div>
-      <div class="side candidate"><div class="label">HANDWASH CANDIDATE ${id.toUpperCase()}</div><img id="candidate" src="${url}"><div class="credit">${credit}</div></div>
-    </div></body></html>`,{waitUntil:'domcontentloaded'});
-    const loaded=await page.evaluate(()=>Promise.all(['official','candidate'].map(id=>new Promise(resolve=>{const im=document.getElementById(id);if(im.complete)return resolve(im.naturalWidth>0);const t=setTimeout(()=>resolve(false),10000);im.onload=()=>{clearTimeout(t);resolve(true)};im.onerror=()=>{clearTimeout(t);resolve(false)};}))));
-    console.log('HANDWASH_CANDIDATE',id,loaded);
-    await page.waitForTimeout(250);
-    await page.screenshot({path:`qa/reports/g1r2-fast/HANDWASH-${String(i+1).padStart(2,'0')}-${id}.png`});
-  }
+test('G1R2 final handwashing candidate faceoff',async({page})=>{
+ test.setTimeout(90000);await page.setViewportSize({width:1280,height:720});require('fs').mkdirSync('qa/reports/g1r2-fast',{recursive:true});
+ for(let i=0;i<CANDIDATES.length;i++){const[id,url,credit]=CANDIDATES[i];await page.setContent(`<!doctype html><style>*{box-sizing:border-box}body{margin:0;background:#151515;font-family:Arial;color:white}.w{width:1280px;height:720px;display:grid;grid-template-columns:1fr 1fr;gap:4px}.s{position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:18px;background:#222}.c{background:#f4fbff}.l,.cr{position:absolute;z-index:2;background:#000b;border-radius:6px;padding:7px 10px}.l{left:12px;top:10px;font-weight:700}.cr{right:12px;bottom:10px;font-size:12px}img{max-width:100%;max-height:100%;object-fit:contain}</style><div class=w><div class=s><div class=l>BABY PANDA · ACTION COMPOSITION</div><img id=o src="${OFFICIAL}"></div><div class="s c"><div class=l>${id.toUpperCase()}</div><img id=c src="${url}"><div class=cr>${credit}</div></div></div>`,{waitUntil:'domcontentloaded'});const ok=await page.evaluate(()=>Promise.all(['o','c'].map(id=>new Promise(r=>{const x=document.getElementById(id);if(x.complete)return r(x.naturalWidth>0);const t=setTimeout(()=>r(false),10000);x.onload=()=>{clearTimeout(t);r(true)};x.onerror=()=>{clearTimeout(t);r(false)}}))));console.log(id,ok);await page.waitForTimeout(250);await page.screenshot({path:`qa/reports/g1r2-fast/FINAL-${i+1}-${id}.png`});}
 });
