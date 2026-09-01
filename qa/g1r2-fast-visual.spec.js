@@ -4,8 +4,10 @@ const OFFICIAL='https://play-lh.googleusercontent.com/ZhT3SqfpofaxPlUUSlxPeUb0Sb
 const CANDIDATES=[
   ['fira','https://upload.wikimedia.org/wikipedia/commons/f/fd/Aktivitas_Menggosok_Gigi_oleh_Fira.svg','Fira.adiba · CC BY-SA 4.0'],
   ['satria','https://upload.wikimedia.org/wikipedia/commons/4/48/Ilustrasi_anak_sedang_menggosok_gigi.svg','Satriaraspati · CC BY-SA 4.0'],
-  ['activity1','https://upload.wikimedia.org/wikipedia/commons/e/ee/Aktivitas-Menggosok-Gigi-1.svg','Commons teaching illustration · CC BY-SA 4.0'],
-  ['illustration','https://upload.wikimedia.org/wikipedia/commons/b/b3/Ilustrasi_Menggosok_Gigi.svg','Commons teaching illustration · CC BY-SA 4.0']
+  ['ealita','https://upload.wikimedia.org/wikipedia/commons/e/ee/Aktivitas-Menggosok-Gigi-1.svg','Ealita · CC BY-SA 4.0'],
+  ['illustration','https://upload.wikimedia.org/wikipedia/commons/b/b3/Ilustrasi_Menggosok_Gigi.svg','Commons teaching illustration · CC BY-SA 4.0'],
+  ['naejaty','https://upload.wikimedia.org/wikipedia/commons/e/ec/Aktivitas_Menggosok_gigi.svg','Naejaty · CC BY-SA 4.0'],
+  ['maslanang','https://upload.wikimedia.org/wikipedia/commons/4/49/Menggosok-gigi.svg','Maslanangdev · CC BY-SA 4.0']
 ];
 
 test('G1R2 licensed authored candidate cut', async ({page})=>{
