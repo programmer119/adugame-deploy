@@ -1,11 +1,28 @@
-const { test } = require('@playwright/test');
+const { test, expect } = require('@playwright/test');
+const fs=require('fs');
 const OFFICIAL='https://play-lh.googleusercontent.com/ZhT3SqfpofaxPlUUSlxPeUb0SbSVlfkA1LcubCNqdkXtb4FT4mZclYzFYC_7LW7eKA=w526-h296';
-const CANDIDATES=[
- ['wash-boy','https://openclipart.org/image/2000px/312394','oksmith · publicdomainq/Openclipart public domain'],
- ['siblings','https://publicdomainq.net/images/202007/24s/publicdomainq-0047297fns.jpg','PublicDomainQ · CC0 public domain'],
- ['pdq-boy-thumb','https://publicdomainq.net/images/202001/27s/publicdomainq-0042284ufa.jpg','PublicDomainQ · CC0 public domain']
-];
-test('G1R2 final child handwashing scenes',async({page})=>{
- test.setTimeout(90000);await page.setViewportSize({width:1280,height:720});require('fs').mkdirSync('qa/reports/g1r2-fast',{recursive:true});
- for(let i=0;i<CANDIDATES.length;i++){const[id,url,credit]=CANDIDATES[i];await page.setContent(`<!doctype html><style>*{box-sizing:border-box}body{margin:0;background:#151515;font-family:Arial;color:white}.w{width:1280px;height:720px;display:grid;grid-template-columns:1fr 1fr;gap:4px}.s{position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:18px;background:#222}.c{background:#f4fbff}.l,.cr{position:absolute;z-index:2;background:#000b;border-radius:6px;padding:7px 10px}.l{left:12px;top:10px;font-weight:700}.cr{right:12px;bottom:10px;font-size:12px}img{max-width:100%;max-height:100%;object-fit:contain}</style><div class=w><div class=s><div class=l>BABY PANDA · ACTION COMPOSITION</div><img id=o src="${OFFICIAL}"></div><div class="s c"><div class=l>${id.toUpperCase()}</div><img id=c src="${url}"><div class=cr>${credit}</div></div></div>`,{waitUntil:'domcontentloaded'});const ok=await page.evaluate(()=>Promise.all(['o','c'].map(id=>new Promise(r=>{const x=document.getElementById(id);if(x.complete)return r(x.naturalWidth>0);const t=setTimeout(()=>r(false),10000);x.onload=()=>{clearTimeout(t);r(true)};x.onerror=()=>{clearTimeout(t);r(false)}}))));console.log(id,ok);await page.waitForTimeout(250);await page.screenshot({path:`qa/reports/g1r2-fast/CHILD-${i+1}-${id}.png`});}
+
+test('actual G1R2 v17 + benchmark side-by-side',async({page})=>{
+  test.setTimeout(90000);
+  fs.mkdirSync('qa/reports/g1r2-fast',{recursive:true});
+  await page.goto('/index.html?game=1&round=2&e2e=1',{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>document.querySelector('#g1r2-v17-overlay')?.dataset.ready==='1',null,{timeout:25000});
+  await page.waitForTimeout(800);
+  const generated=await page.evaluate(()=>window.__ADUGAME_ART_SOURCE__?.G1R2?.generatedVisualAssets);
+  expect(generated).toBe(0);
+  const version=await page.evaluate(()=>window.__ADUGAME_ART_SOURCE__?.G1R2?.version);
+  expect(version).toBe('v17.0');
+  const current=await page.screenshot({path:'qa/reports/g1r2-fast/G1R2-v17.png',fullPage:true});
+  const data=`data:image/png;base64,${current.toString('base64')}`;
+
+  await page.setViewportSize({width:1280,height:720});
+  await page.setContent(`<!doctype html><html><head><meta charset="utf-8"><style>
+    *{box-sizing:border-box}body{margin:0;background:#121212;font-family:Arial;color:#fff;overflow:hidden}
+    .w{width:1280px;height:720px;display:grid;grid-template-columns:1fr 1fr;gap:4px}
+    .s{position:relative;display:flex;align-items:center;justify-content:center;background:#222;overflow:hidden;padding:12px}
+    .l{position:absolute;left:12px;top:10px;background:#000c;border-radius:7px;padding:8px 11px;font-size:15px;font-weight:800;z-index:2}
+    img{max-width:100%;max-height:100%;object-fit:contain}
+  </style></head><body><div class="w"><div class="s"><div class="l">BABY PANDA · ACTION COMPOSITION</div><img id="o" src="${OFFICIAL}"></div><div class="s"><div class="l">ADUGAME · ACTUAL R2 v17</div><img src="${data}"></div></div></body></html>`,{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>{const x=document.getElementById('o');return x?.complete&&x.naturalWidth>0},null,{timeout:12000});
+  await page.screenshot({path:'qa/reports/g1r2-fast/COMPARE-v17.png'});
 });
