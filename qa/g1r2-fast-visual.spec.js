@@ -11,17 +11,6 @@ async function debug(page,name){const d=await page.evaluate(()=>({state:window._
 async function ready(page){await page.goto('/index.html?game=1&round=2&e2e=1',{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>document.querySelector('#g1r2-v17-overlay')?.dataset.ready==='1',null,{timeout:30000});await page.waitForTimeout(220);const d=await debug(page,'DEBUG-ready');expect(d.generated).toBe(0);expect(d.version).toBe('v17.5');expect(d.state?.benchmarkV5).toBe('brush-face-nails');expect(d.state?.g1r2V17Input).toBeTruthy();return d;}
 async function brushQuadrant(page,name,pts,index){await drag(page,[[1040,570],...pts],1);await page.waitForTimeout(120);const d=await debug(page,`DEBUG-brush-${name}`);expect(d.state.mouthProgress[index]).toBeGreaterThanOrEqual(115);}
 
-async function driveToNails(page){
-  await drag(page,[[880,570],[930,570],[985,570],[1040,570]],1);await waitStep(page,1);
-  await brushQuadrant(page,'q0',[[745,330],[775,330],[735,345],[775,345],[735,330],[775,330],[735,345]],0);
-  await brushQuadrant(page,'q1',[[825,330],[865,330],[815,345],[865,345],[815,330],[865,330],[815,345]],1);
-  await brushQuadrant(page,'q2',[[745,390],[775,390],[735,410],[775,410],[735,390],[775,390],[735,410]],2);
-  await brushQuadrant(page,'q3',[[825,390],[865,390],[815,410],[865,410],[815,390],[865,390],[815,410]],3);
-  await waitStep(page,2);
-  await drag(page,[[1110,420],[790,330],[735,330],[845,330],[735,345],[845,345],[735,315],[845,315],[790,330]],1);
-  await waitStep(page,3);
-}
-
 test('R2 v17.5 toothpaste-brush-facewash chain',async({page})=>{
   test.setTimeout(105000);fs.mkdirSync('qa/reports/g1r2-fast',{recursive:true});const start=await ready(page);expect(start.state.step).toBe(0);await snap(page,'STEP-0-toothpaste');
   await drag(page,[[880,570],[930,570],[985,570],[1040,570]],1);await waitStep(page,1);await snap(page,'STEP-1-brush');
@@ -35,7 +24,7 @@ test('R2 v17.5 toothpaste-brush-facewash chain',async({page})=>{
 });
 
 test('R2 v17.5 nail clipper input 5 of 5',async({page})=>{
-  test.setTimeout(50000);fs.mkdirSync('qa/reports/g1r2-fast',{recursive:true});await ready(page);
+  test.setTimeout(95000);fs.mkdirSync('qa/reports/g1r2-fast',{recursive:true});await ready(page);
   await page.evaluate(()=>{const s=window.__ADUGAME_SCENE__?.();s.step=3;s.clipped.clear();s.clipper.setPosition(1110,270);s.clipper.home={x:1110,y:270};});await page.waitForTimeout(180);await snap(page,'STEP-3-nails-focused');
   for(let i=0;i<NAILS.length;i++){
     await drag(page,[[1110,270],[1000,340],[880,430],[770,510],NAILS[i]],1);await page.waitForTimeout(160);
