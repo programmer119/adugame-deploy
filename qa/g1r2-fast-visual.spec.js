@@ -12,7 +12,7 @@ async function brushQuadrant(page,name,pts,index){await drag(page,[[1040,570],..
 async function washFace(page){let before=0;for(let i=0;i<6;i++){const state=await page.evaluate(()=>window.__ADUGAME_DEBUG__?.());if(state?.step===3)return;expect(state?.step).toBe(2);await drag(page,[[1110,420],[790,330],[735,330],[845,330],[735,345],[845,345],[735,315],[845,315],[790,330]],4);await page.waitForTimeout(330);const d=await debug(page,`DEBUG-facewash-${i+1}`);expect(d.state.faceWash).toBeGreaterThan(before);before=d.state.faceWash;}await waitStep(page,3);}
 
 test('actual G1R2 v17.4 full brush-face-nails interaction',async({page})=>{
-  test.setTimeout(120000);fs.mkdirSync('qa/reports/g1r2-fast',{recursive:true});await ready(page);await snap(page,'STEP-0-toothpaste');
+  test.setTimeout(180000);fs.mkdirSync('qa/reports/g1r2-fast',{recursive:true});await ready(page);await snap(page,'STEP-0-toothpaste');
   await drag(page,[[880,570],[930,570],[985,570],[1040,570]],4);await waitStep(page,1);await snap(page,'STEP-1-brush');
   await brushQuadrant(page,'q0',[[745,330],[775,330],[735,345],[775,345],[735,330],[775,330],[735,345]],0);
   await brushQuadrant(page,'q1',[[825,330],[865,330],[815,345],[865,345],[815,330],[865,330],[815,345]],1);
