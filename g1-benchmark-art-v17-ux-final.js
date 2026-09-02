@@ -34,7 +34,8 @@
 
     let pointer={x:null,y:null,inside:false};
     let prevPasteUp=scene.debugState?.()?.g1r2V17Input?.pasteUp||0;
-    let missUntil=0;
+    let prevPasteDown=scene.debugState?.()?.g1r2V17Input?.pasteDown||0;
+    let pasteMissActive=false;
     const logical=e=>{
       if(!canvas)return{x:0,y:0,inside:false};
       const r=canvas.getBoundingClientRect();
@@ -60,10 +61,12 @@
       if(active&&pointer.inside&&pointer.x!=null&&cursor){cursor.style.left=pct(pointer.x,1280);cursor.style.top=pct(pointer.y,720);}
       if(active==='cloth'&&pointer.inside&&pointer.x!=null&&wash){wash.style.left=pct(pointer.x,1280);wash.style.top=pct(pointer.y,720);wash.style.opacity='1';}
 
-      const pasteUp=input.pasteUp||0;
-      if(pasteUp>prevPasteUp&&st===0){missUntil=performance.now()+1650;root.dataset.finalUxFeedback='paste-miss';}
-      prevPasteUp=pasteUp;
-      const miss=st===0&&performance.now()<missUntil;
+      const pasteDown=input.pasteDown||0,pasteUp=input.pasteUp||0;
+      if(pasteDown>prevPasteDown&&pasteMissActive)pasteMissActive=false;
+      if(pasteUp>prevPasteUp&&st===0){pasteMissActive=true;root.dataset.finalUxFeedback='paste-miss';}
+      if(st!==0)pasteMissActive=false;
+      prevPasteDown=pasteDown;prevPasteUp=pasteUp;
+      const miss=st===0&&pasteMissActive;
 
       dropTarget.style.opacity=st===0?(miss?'.98':active==='paste'?'.88':'.62'):'0';
       dropTarget.style.transform=st===0?(miss?'translate(-50%,-50%) scale(1.08)':'translate(-50%,-50%)'):'translate(-50%,-50%)';
@@ -79,7 +82,7 @@
       if(st===0&&status)status.textContent='치약 튜브를 잡고 오른쪽 칫솔의 흰 솔 부분에 놓아 주세요';
 
       root.dataset.toolHitAlignmentReady='1';root.dataset.finalAlertReady='1';root.dataset.version='17.28';
-      if(window.__ADUGAME_ART_SOURCE__?.G1R2){window.__ADUGAME_ART_SOURCE__.G1R2.version='v17.28';window.__ADUGAME_ART_SOURCE__.G1R2.dynamicUxFinal={pasteHome:{...PASTE_HOME},brushPasteTarget:{...BRUSH_PASTE_TARGET},brushHome:{...BRUSH_HOME},clothHome:{...CLOTH_HOME},visibleToolHitAlignment:true,pasteMissFeedback:true,persistentMissAlert:true,pasteDropTarget:true,pointerPositionGuard:true,finalDomPointerGuard:true,generatedVisualAssets:0};window.__ADUGAME_ART_SOURCE__.G1R2.generatedVisualAssets=0;}
+      if(window.__ADUGAME_ART_SOURCE__?.G1R2){window.__ADUGAME_ART_SOURCE__.G1R2.version='v17.28';window.__ADUGAME_ART_SOURCE__.G1R2.dynamicUxFinal={pasteHome:{...PASTE_HOME},brushPasteTarget:{...BRUSH_PASTE_TARGET},brushHome:{...BRUSH_HOME},clothHome:{...CLOTH_HOME},visibleToolHitAlignment:true,pasteMissFeedback:true,persistentMissAlert:true,missPersistsUntilRetry:true,pasteDropTarget:true,pointerPositionGuard:true,finalDomPointerGuard:true,generatedVisualAssets:0};window.__ADUGAME_ART_SOURCE__.G1R2.generatedVisualAssets=0;}
     };
     scene.events.on('postupdate',sync);sync();
     const cleanup=()=>{window.removeEventListener('pointerdown',track,true);window.removeEventListener('pointermove',track,true);dropTarget.remove();alert.remove();scene.__g1v1728FinalUx=false;};
