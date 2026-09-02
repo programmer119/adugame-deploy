@@ -1,14 +1,14 @@
-// ADUGAME G1R2 v17.21 action-density polish.
+// ADUGAME G1R2 v17.22 action-focus polish.
 // CSS/environment/framing treatment only. No generated visual assets; gameplay flow is preserved.
 (() => {
   if (typeof G1R2 !== 'function') return;
-  const CLIPPER_HOME={x:900,y:260};
+  const CLIPPER_HOME={x:985,y:250};
 
   function attach(scene){
-    if(scene.scene?.key!=='G1R2'||scene.__g1v1721Immersive)return;
+    if(scene.scene?.key!=='G1R2'||scene.__g1v1722Immersive)return;
     const root=document.getElementById('g1r2-v17-overlay');
     if(!root){scene.time.delayedCall(100,()=>attach(scene));return;}
-    scene.__g1v1721Immersive=true;
+    scene.__g1v1722Immersive=true;
     const children=[...root.children];
     const room=children.find(e=>e.tagName==='DIV'&&e.style.overflow==='hidden'&&e.style.borderRadius==='26px');
     const title=children.find(e=>e.tagName==='DIV'&&e.textContent?.trim()==='양치 · 세수 · 손톱 정리');
@@ -51,37 +51,38 @@
         people.style.filter='saturate(1.1) contrast(1.015)';
       }
 
+      // Bring the authored bath action forward while keeping the real face target fixed at the child's face.
       if(face&&st===2){
-        face.style.left='55%';face.style.top='34%';face.style.width='74%';face.style.height='84%';
-        face.style.transform='translate(-50%,-50%)';face.style.filter='saturate(1.09) contrast(1.015)';
+        face.style.left='53.7%';face.style.top='31.8%';face.style.width='88%';face.style.height='95%';
+        face.style.transform='translate(-50%,-50%)';face.style.filter='saturate(1.10) contrast(1.018)';
       } else if(face){
         face.style.filter='saturate(1.08) contrast(1.01)';
       }
 
-      // The accepted Public Domain raised-hand art now reads as a close-up action scene instead of a full-body sticker.
+      // Crop the same accepted Public Domain raised-hand art to the hand/face action instead of the legs.
       if(nail&&st===3){
-        nail.style.left='48.4%';nail.style.top='48.6%';nail.style.width='90%';nail.style.height='106%';
-        nail.style.transform='translate(-50%,-50%)';nail.style.filter='saturate(1.09) contrast(1.015)';
+        nail.style.left='48.4%';nail.style.top='53.5%';nail.style.width='118%';nail.style.height='125%';
+        nail.style.transform='translate(-50%,-50%)';nail.style.filter='saturate(1.10) contrast(1.018)';
       } else if(nail){
         nail.style.filter='saturate(1.08) contrast(1.01)';
       }
 
-      if(status)status.style.opacity=st===3?'.70':'1';
+      if(status)status.style.opacity=st===3?'.66':'1';
       if(st===3&&scene.clipper){
         if(scene.clipper.home?.x!==CLIPPER_HOME.x||scene.clipper.home?.y!==CLIPPER_HOME.y){scene.clipper.setPosition(CLIPPER_HOME.x,CLIPPER_HOME.y);scene.clipper.home={...CLIPPER_HOME};}
-        if(clipper){clipper.style.width='7.2%';clipper.style.transform='translate(-50%,-50%) rotate(-22deg)';clipper.style.filter='saturate(.74) contrast(1.05) brightness(1.04)';}
+        if(clipper){clipper.style.width='10.5%';clipper.style.transform='translate(-50%,-50%) rotate(-24deg)';clipper.style.filter='saturate(.78) contrast(1.08) brightness(1.04)';}
       }
     };
     scene.events.on('postupdate',sync);sync();
 
-    root.dataset.version='17.21';
+    root.dataset.version='17.22';
     if(window.__ADUGAME_ART_SOURCE__?.G1R2){
-      window.__ADUGAME_ART_SOURCE__.G1R2.version='v17.21';
-      window.__ADUGAME_ART_SOURCE__.G1R2.immersivePolish={environment:'continuous CSS bathroom wall-floor depth',framing:'balanced face-wash + nail action close-up',clipperHome:{...CLIPPER_HOME},generatedVisualAssets:0};
+      window.__ADUGAME_ART_SOURCE__.G1R2.version='v17.22';
+      window.__ADUGAME_ART_SOURCE__.G1R2.immersivePolish={environment:'continuous CSS bathroom wall-floor depth',framing:'face-wash close action + raised-hand nail close action',clipperHome:{...CLIPPER_HOME},generatedVisualAssets:0};
       window.__ADUGAME_ART_SOURCE__.G1R2.generatedVisualAssets=0;
     }
-    if(window.__ADUGAME_G1_BENCHMARK_ART_V17__)window.__ADUGAME_G1_BENCHMARK_ART_V17__.version='17.21';
-    const cleanup=()=>{scene.__g1v1721Immersive=false;};
+    if(window.__ADUGAME_G1_BENCHMARK_ART_V17__)window.__ADUGAME_G1_BENCHMARK_ART_V17__.version='17.22';
+    const cleanup=()=>{scene.__g1v1722Immersive=false;};
     scene.events.once('shutdown',cleanup);scene.events.once('destroy',cleanup);
   }
 

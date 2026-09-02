@@ -1,10 +1,10 @@
-// ADUGAME G1R2 v17.21 nail-care scene target alignment.
+// ADUGAME G1R2 v17.22 nail-care scene target alignment.
 // Existing human-authored Openclipart image only; Public Domain. No generated visual assets.
 (() => {
   if (typeof G1R2 !== 'function') return;
   const SRC='https://openclipart.org/image/800px/305090'; // Choose me — oksmith — publicdomainq.net / Public Domain
-  // Targets follow the five visible fingertips after the v17.21 action close-up crop.
-  const NAIL_POS=[[776,226],[791,204],[805,194],[821,200],[836,214]];
+  // Targets follow the five visible fingertips after the v17.22 tighter hand/face crop.
+  const NAIL_POS=[[825,223],[845,194],[863,181],[884,188],[903,207]];
   const pct=(v,b)=>`${v/b*100}%`;
 
   function attach(scene){
@@ -23,7 +23,7 @@
       root.dataset.nailRaiseReady='1';
       if(window.__ADUGAME_ART_SOURCE__?.G1R2){
         window.__ADUGAME_ART_SOURCE__.G1R2.nailScene={name:'Choose me',author:'oksmith',source:'Openclipart / publicdomainq.net',license:'Public Domain'};
-        window.__ADUGAME_ART_SOURCE__.G1R2.nailTargets='raised hand 5 fingertips — v17.21 close-up aligned';
+        window.__ADUGAME_ART_SOURCE__.G1R2.nailTargets='raised hand 5 fingertips — v17.22 close-up aligned';
         window.__ADUGAME_ART_SOURCE__.G1R2.generatedVisualAssets=0;
       }
     };
@@ -39,8 +39,8 @@
       if(on){
         (scene.nails||[]).forEach((n,i)=>{const p=NAIL_POS[i]||NAIL_POS[2];if(!scene.clipped?.has(i))n.setPosition(p[0],p[1]);});
         if(focus){
-          focus.style.left=pct(806,1280);focus.style.top=pct(210,720);
-          focus.style.width=pct(112,1280);focus.style.height=pct(86,720);focus.style.opacity='1';
+          focus.style.left=pct(864,1280);focus.style.top=pct(199,720);
+          focus.style.width=pct(150,1280);focus.style.height=pct(116,720);focus.style.opacity='1';
         }
       }
     };
