@@ -1,5 +1,6 @@
 // ADUGAME G1R2 v17.18 immersive framing polish.
 // CSS/environment/framing treatment only. No generated visual assets; mechanics and authored assets unchanged.
+// QA trigger: v17.18 framing verification.
 (() => {
   if (typeof G1R2 !== 'function') return;
   const CLIPPER_HOME={x:930,y:300};
