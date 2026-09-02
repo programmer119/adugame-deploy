@@ -8,7 +8,7 @@ on:
 jobs:
   capture:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -18,6 +18,8 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
+      - name: G1R2 v17.30 syntax gate
+        run: node --check g1-benchmark-art-v17-motion.js && node --check qa/g1r2-final-ux.spec.js
       - name: Capture G1R2 only
         run: npx playwright test --config=playwright.g1r2-fast.config.js
       - name: Upload G1R2 visual
