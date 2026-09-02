@@ -25,8 +25,8 @@
     style.textContent=`
       #g1r2-v17-overlay .g1v17-motion-veil{transition:opacity .28s ease-out;}
       @media (max-width:900px) and (max-height:500px){
-        #g1r2-v17-overlay .g1v17-ux-status{font-size:13px!important;line-height:1.16!important;padding:6px 12px!important;min-width:0!important;max-width:70%!important;border-radius:15px!important;}
-        #g1r2-v17-overlay .g1v17-ux-progress{font-size:12px!important;line-height:1.1!important;padding:5px 9px!important;min-width:0!important;max-width:54%!important;}
+        #g1r2-v17-overlay .g1v17-ux-status{font-size:13px!important;line-height:1.16!important;padding:6px 12px!important;min-width:0!important;max-width:68%!important;border-radius:15px!important;}
+        #g1r2-v17-overlay .g1v17-ux-progress{opacity:0!important;pointer-events:none!important;}
         #g1r2-v17-overlay .g1v17-final-alert{font-size:12px!important;padding:6px 10px!important;max-width:72%!important;white-space:normal!important;text-align:center!important;}
       }
       @media (prefers-reduced-motion: reduce){
@@ -43,19 +43,30 @@
     root.appendChild(veil);
 
     let lastStep=Number(scene.step)||0;
-    let transitionCount=0;
+    let transitionCount=0,animatedCount=0,reducedCount=0;
     let transitionToken=0;
     let lastNear='';
+    root.dataset.motionTransitionCount='0';
+    root.dataset.motionAnimatedTransitionCount='0';
+    root.dataset.motionReducedTransitionCount='0';
+    root.dataset.motionLastMode='none';
+    root.dataset.motionLastStep=String(lastStep);
     const reduced=()=>!!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
     const setNear=value=>{if(value===lastNear)return;lastNear=value;root.dataset.motionNearTarget=value;};
     const transition=()=>{
-      transitionCount+=1;root.dataset.motionTransitionCount=String(transitionCount);
+      transitionCount+=1;
+      const mode=reduced()?'reduced':'animated';
+      root.dataset.motionTransitionCount=String(transitionCount);
+      root.dataset.motionLastMode=mode;
+      root.dataset.motionLastStep=String(lastStep);
       const token=++transitionToken;
-      if(reduced()){
+      if(mode==='reduced'){
+        reducedCount+=1;root.dataset.motionReducedTransitionCount=String(reducedCount);
         veil.style.opacity='0';root.dataset.motionTransition='reduced';
         setTimeout(()=>{if(root.isConnected&&token===transitionToken)root.dataset.motionTransition='idle';},700);
         return;
       }
+      animatedCount+=1;root.dataset.motionAnimatedTransitionCount=String(animatedCount);
       root.dataset.motionTransition='active';veil.style.opacity='.30';
       requestAnimationFrame(()=>requestAnimationFrame(()=>{if(root.isConnected&&token===transitionToken)veil.style.opacity='0';}));
       setTimeout(()=>{if(root.isConnected&&token===transitionToken)root.dataset.motionTransition='idle';},700);
@@ -98,7 +109,7 @@
       root.dataset.motionReady='1';root.dataset.version='17.30';
       if(window.__ADUGAME_ART_SOURCE__?.G1R2){
         window.__ADUGAME_ART_SOURCE__.G1R2.version='v17.30';
-        window.__ADUGAME_ART_SOURCE__.G1R2.dynamicMotion={stepTransition:true,targetProximityFeedback:true,reducedMotionAware:true,generatedVisualAssets:0};
+        window.__ADUGAME_ART_SOURCE__.G1R2.dynamicMotion={stepTransition:true,targetProximityFeedback:true,reducedMotionAware:true,stableTransitionTelemetry:true,mobileSingleInstruction:true,generatedVisualAssets:0};
         window.__ADUGAME_ART_SOURCE__.G1R2.generatedVisualAssets=0;
       }
       if(window.__ADUGAME_G1_BENCHMARK_ART_V17__)window.__ADUGAME_G1_BENCHMARK_ART_V17__.version='17.30';
