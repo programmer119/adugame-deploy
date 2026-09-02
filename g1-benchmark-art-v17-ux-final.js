@@ -18,6 +18,8 @@
     const focus=[...root.querySelectorAll('div')].find(d=>d.style.borderWidth==='5px'&&d.style.position==='absolute'&&d.style.transform.includes('translate'));
     const progress=root.querySelector('.g1v17-ux-progress');
     const status=root.querySelector('.g1v17-ux-status');
+    const cursor=root.querySelector('.g1v17-ux-cursor');
+    const wash=root.querySelector('.g1v17-wash-feedback');
     let pointer={x:null,y:null,inside:false};
     let prevPasteUp=scene.debugState?.()?.g1r2V17Input?.pasteUp||0;
     let missUntil=0;
@@ -55,6 +57,13 @@
       }
       if(scene.cloth&&st!==2)scene.cloth.home={...CLOTH_HOME};
 
+      if(active&&pointer.inside&&pointer.x!=null&&cursor){
+        cursor.style.left=pct(pointer.x,1280);cursor.style.top=pct(pointer.y,720);
+      }
+      if(active==='cloth'&&pointer.inside&&pointer.x!=null&&wash){
+        wash.style.left=pct(pointer.x,1280);wash.style.top=pct(pointer.y,720);wash.style.opacity='1';
+      }
+
       const pasteUp=input.pasteUp||0;
       if(pasteUp>prevPasteUp&&st===0){
         missUntil=performance.now()+1500;
@@ -90,7 +99,7 @@
         window.__ADUGAME_ART_SOURCE__.G1R2.version='v17.27';
         window.__ADUGAME_ART_SOURCE__.G1R2.dynamicUxFinal={
           pasteHome:{...PASTE_HOME},brushPasteTarget:{...BRUSH_PASTE_TARGET},brushHome:{...BRUSH_HOME},clothHome:{...CLOTH_HOME},
-          visibleToolHitAlignment:true,pasteMissFeedback:true,pointerPositionGuard:true,generatedVisualAssets:0
+          visibleToolHitAlignment:true,pasteMissFeedback:true,pointerPositionGuard:true,finalDomPointerGuard:true,generatedVisualAssets:0
         };
         window.__ADUGAME_ART_SOURCE__.G1R2.generatedVisualAssets=0;
       }
