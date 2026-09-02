@@ -1,14 +1,15 @@
-// ADUGAME G1R2 v17.22 action-focus polish.
-// CSS/environment/framing treatment only. No generated visual assets; gameplay flow is preserved.
+// ADUGAME G1R2 v17.23 authored bathroom-context polish.
+// Existing human-authored Openclipart imagery + CSS framing only. No generated visual assets.
 (() => {
   if (typeof G1R2 !== 'function') return;
   const CLIPPER_HOME={x:985,y:250};
+  const BATHROOM_SRC='https://openclipart.org/image/2000px/201728'; // Bathroom — Viscious-Speed — Openclipart — CC0/Public Domain
 
   function attach(scene){
-    if(scene.scene?.key!=='G1R2'||scene.__g1v1722Immersive)return;
+    if(scene.scene?.key!=='G1R2'||scene.__g1v1723Immersive)return;
     const root=document.getElementById('g1r2-v17-overlay');
     if(!root){scene.time.delayedCall(100,()=>attach(scene));return;}
-    scene.__g1v1722Immersive=true;
+    scene.__g1v1723Immersive=true;
     const children=[...root.children];
     const room=children.find(e=>e.tagName==='DIV'&&e.style.overflow==='hidden'&&e.style.borderRadius==='26px');
     const title=children.find(e=>e.tagName==='DIV'&&e.textContent?.trim()==='양치 · 세수 · 손톱 정리');
@@ -19,6 +20,15 @@
     const face=root.querySelector('.g1v17-facewash-scene');
     const nail=root.querySelector('.g1v17-nailraise-scene');
     const clipper=root.querySelector('.g1v17-clipper');
+
+    const bathroom=document.createElement('img');
+    bathroom.src=BATHROOM_SRC;bathroom.alt='cartoon bathroom interior';bathroom.draggable=false;bathroom.className='g1v17-bathroom-context';
+    Object.assign(bathroom.style,{position:'absolute',pointerEvents:'none',userSelect:'none',left:'0',top:'6.2%',width:'100%',height:'93.8%',objectFit:'cover',objectPosition:'50% 50%',zIndex:'1',opacity:'0',transition:'opacity .18s ease',filter:'hue-rotate(165deg) saturate(.52) brightness(1.15) contrast(.92)'});
+    root.appendChild(bathroom);root.dataset.bathroomBackdropReady='0';
+    const backdropLoaded=()=>{root.dataset.bathroomBackdropReady='1';};
+    bathroom.addEventListener('load',backdropLoaded,{once:true});
+    bathroom.addEventListener('error',()=>{root.dataset.bathroomBackdropReady='error';},{once:true});
+    if(bathroom.complete&&bathroom.naturalWidth>0)backdropLoaded();
 
     root.style.background='linear-gradient(180deg,#c7edf5 0%,#e9f8fb 56%,#f8e7b8 56%,#f4d99a 100%)';
     if(room){
@@ -36,6 +46,7 @@
     const sync=()=>{
       if(!root.isConnected||scene.scene?.key!=='G1R2')return;
       const st=Number(scene.step)||0;
+      bathroom.style.opacity=st===0?'.34':st===1?'.38':st===2?'.12':st===3?'.14':'.24';
 
       if(people&&st===0){
         people.style.clipPath='none';
@@ -51,7 +62,6 @@
         people.style.filter='saturate(1.1) contrast(1.015)';
       }
 
-      // Bring the authored bath action forward while keeping the real face target fixed at the child's face.
       if(face&&st===2){
         face.style.left='53.7%';face.style.top='31.8%';face.style.width='88%';face.style.height='95%';
         face.style.transform='translate(-50%,-50%)';face.style.filter='saturate(1.10) contrast(1.018)';
@@ -59,7 +69,6 @@
         face.style.filter='saturate(1.08) contrast(1.01)';
       }
 
-      // Crop the same accepted Public Domain raised-hand art to the hand/face action instead of the legs.
       if(nail&&st===3){
         nail.style.left='48.4%';nail.style.top='53.5%';nail.style.width='118%';nail.style.height='125%';
         nail.style.transform='translate(-50%,-50%)';nail.style.filter='saturate(1.10) contrast(1.018)';
@@ -75,14 +84,15 @@
     };
     scene.events.on('postupdate',sync);sync();
 
-    root.dataset.version='17.22';
+    root.dataset.version='17.23';
     if(window.__ADUGAME_ART_SOURCE__?.G1R2){
-      window.__ADUGAME_ART_SOURCE__.G1R2.version='v17.22';
-      window.__ADUGAME_ART_SOURCE__.G1R2.immersivePolish={environment:'continuous CSS bathroom wall-floor depth',framing:'face-wash close action + raised-hand nail close action',clipperHome:{...CLIPPER_HOME},generatedVisualAssets:0};
+      window.__ADUGAME_ART_SOURCE__.G1R2.version='v17.23';
+      window.__ADUGAME_ART_SOURCE__.G1R2.bathroomBackdrop={name:'Bathroom',author:'Viscious-Speed',source:'Openclipart',license:'CC0/Public Domain',url:BATHROOM_SRC};
+      window.__ADUGAME_ART_SOURCE__.G1R2.immersivePolish={environment:'authored Openclipart bathroom context + CSS color integration',framing:'face-wash close action + raised-hand nail close action',clipperHome:{...CLIPPER_HOME},generatedVisualAssets:0};
       window.__ADUGAME_ART_SOURCE__.G1R2.generatedVisualAssets=0;
     }
-    if(window.__ADUGAME_G1_BENCHMARK_ART_V17__)window.__ADUGAME_G1_BENCHMARK_ART_V17__.version='17.22';
-    const cleanup=()=>{scene.__g1v1722Immersive=false;};
+    if(window.__ADUGAME_G1_BENCHMARK_ART_V17__)window.__ADUGAME_G1_BENCHMARK_ART_V17__.version='17.23';
+    const cleanup=()=>{bathroom.remove();scene.__g1v1723Immersive=false;};
     scene.events.once('shutdown',cleanup);scene.events.once('destroy',cleanup);
   }
 
