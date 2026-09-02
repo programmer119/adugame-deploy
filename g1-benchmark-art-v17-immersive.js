@@ -1,14 +1,14 @@
-// ADUGAME G1R2 v17.19 authored-scene density polish.
+// ADUGAME G1R2 v17.20 authored-scene density polish.
 // CSS/environment/framing treatment only. No generated visual assets; gameplay flow is preserved.
 (() => {
   if (typeof G1R2 !== 'function') return;
   const CLIPPER_HOME={x:865,y:315};
 
   function attach(scene){
-    if(scene.scene?.key!=='G1R2'||scene.__g1v1719Immersive)return;
+    if(scene.scene?.key!=='G1R2'||scene.__g1v1720Immersive)return;
     const root=document.getElementById('g1r2-v17-overlay');
     if(!root){scene.time.delayedCall(100,()=>attach(scene));return;}
-    scene.__g1v1719Immersive=true;
+    scene.__g1v1720Immersive=true;
     const children=[...root.children];
     const room=children.find(e=>e.tagName==='DIV'&&e.style.overflow==='hidden'&&e.style.borderRadius==='26px');
     const title=children.find(e=>e.tagName==='DIV'&&e.textContent?.trim()==='양치 · 세수 · 손톱 정리');
@@ -31,7 +31,7 @@
     if(title)Object.assign(title.style,{left:'1.8%',top:'1.35%',fontSize:'24px',letterSpacing:'-1px'});
     if(stepbar)Object.assign(stepbar.style,{right:'1.8%',top:'1.45%',gap:'7px'});
     if(progress)Object.assign(progress.style,{fontSize:'14px',padding:'6px 10px',background:'rgba(255,255,255,.76)',boxShadow:'0 3px 10px rgba(36,49,74,.08)'});
-    if(status)Object.assign(status.style,{minWidth:'360px',padding:'10px 20px',fontSize:'16px',background:'rgba(36,49,74,.82)',boxShadow:'0 7px 16px rgba(36,49,74,.13)'});
+    if(status)Object.assign(status.style,{minWidth:'340px',padding:'8px 18px',fontSize:'15px',background:'rgba(36,49,74,.82)',boxShadow:'0 6px 14px rgba(36,49,74,.12)'});
 
     const sync=()=>{
       if(!root.isConnected||scene.scene?.key!=='G1R2')return;
@@ -51,15 +51,14 @@
         people.style.filter='saturate(1.1) contrast(1.015)';
       }
 
-      // Keep the authored face-wash scene centred around the existing mechanic target while making the action fill more of the stage.
+      // Keep more authored bath context visible than v17.19 while remaining denser than v17.18.
       if(face&&st===2){
-        face.style.left='56%';face.style.top='33%';face.style.width='80%';face.style.height='92%';
+        face.style.left='55%';face.style.top='34%';face.style.width='74%';face.style.height='84%';
         face.style.transform='translate(-50%,-50%)';face.style.filter='saturate(1.09) contrast(1.015)';
       } else if(face){
         face.style.filter='saturate(1.08) contrast(1.01)';
       }
 
-      // Enlarge the accepted raised-hand authored scene; the nail targets remain on the same hand.
       if(nail&&st===3){
         nail.style.left='46.5%';nail.style.top='53%';nail.style.width='70%';nail.style.height='90%';
         nail.style.transform='translate(-50%,-50%)';nail.style.filter='saturate(1.09) contrast(1.015)';
@@ -74,14 +73,14 @@
     };
     scene.events.on('postupdate',sync);sync();
 
-    root.dataset.version='17.19';
+    root.dataset.version='17.20';
     if(window.__ADUGAME_ART_SOURCE__?.G1R2){
-      window.__ADUGAME_ART_SOURCE__.G1R2.version='v17.19';
-      window.__ADUGAME_ART_SOURCE__.G1R2.immersivePolish={environment:'continuous CSS bathroom wall-floor depth',framing:'denser authored face-wash + raised-hand action framing',clipperHome:{...CLIPPER_HOME},generatedVisualAssets:0};
+      window.__ADUGAME_ART_SOURCE__.G1R2.version='v17.20';
+      window.__ADUGAME_ART_SOURCE__.G1R2.immersivePolish={environment:'continuous CSS bathroom wall-floor depth',framing:'balanced authored face-wash + dense raised-hand action framing',clipperHome:{...CLIPPER_HOME},generatedVisualAssets:0};
       window.__ADUGAME_ART_SOURCE__.G1R2.generatedVisualAssets=0;
     }
-    if(window.__ADUGAME_G1_BENCHMARK_ART_V17__)window.__ADUGAME_G1_BENCHMARK_ART_V17__.version='17.19';
-    const cleanup=()=>{scene.__g1v1719Immersive=false;};
+    if(window.__ADUGAME_G1_BENCHMARK_ART_V17__)window.__ADUGAME_G1_BENCHMARK_ART_V17__.version='17.20';
+    const cleanup=()=>{scene.__g1v1720Immersive=false;};
     scene.events.once('shutdown',cleanup);scene.events.once('destroy',cleanup);
   }
 
