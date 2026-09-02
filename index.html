@@ -7,6 +7,7 @@
   <meta name="description" content="ADUGAME — 초등 실과 웹 기반 가상실습 게임 9라운드 데모" />
   <title>ADUGAME · Web Practice Lab</title>
   <link rel="stylesheet" href="./styles.css" />
+  <script>(()=>{const p=new URLSearchParams(location.search),m=p.get('potpolio')==='1';if(m){let r=document.head.querySelector('meta[name="robots"]');if(!r){r=document.createElement('meta');r.name='robots';document.head.appendChild(r)}r.content='noindex,nofollow,noarchive,nosnippet';document.documentElement.dataset.presentationMode='portfolio';const k=v=>{try{const u=new URL(v,location.href);if(u.origin!==location.origin)return v;u.searchParams.set('potpolio','1');return u.href}catch{return v}};document.addEventListener('click',e=>{const a=e.target.closest?.('a[href]');if(a&&!a.href.startsWith('javascript:')&&!a.href.startsWith('mailto:')&&!a.href.startsWith('tel:'))a.href=k(a.href)},true);['pushState','replaceState'].forEach(n=>{const o=history[n];history[n]=function(s,t,u){return o.call(this,s,t,u?k(u):u)}});return}const s=document.createElement('script');s.src='./presentation-standard.js';s.defer=true;s.dataset.project='ADUGAME 초등 실과 가상실습 게임';document.head.appendChild(s)})();</script>
 </head>
 <body>
   <div id="root"></div>
