@@ -1,9 +1,10 @@
-// ADUGAME G1R2 v17.10 nail-care scene.
+// ADUGAME G1R2 v17.21 nail-care scene target alignment.
 // Existing human-authored Openclipart image only; Public Domain. No generated visual assets.
 (() => {
   if (typeof G1R2 !== 'function') return;
   const SRC='https://openclipart.org/image/800px/305090'; // Choose me — oksmith — publicdomainq.net / Public Domain
-  const NAIL_POS=[[728,276],[741,258],[753,249],[766,254],[779,266]];
+  // Targets follow the five visible fingertips after the v17.21 action close-up crop.
+  const NAIL_POS=[[776,226],[791,204],[805,194],[821,200],[836,214]];
   const pct=(v,b)=>`${v/b*100}%`;
 
   function attach(scene){
@@ -19,14 +20,12 @@
     (scene.nails||[]).forEach((n,i)=>{const p=NAIL_POS[i]||NAIL_POS[2];n.setPosition(p[0],p[1]).setAlpha(.001).setVisible(true);});
 
     const loaded=()=>{
-      root.dataset.nailRaiseReady='1';root.dataset.version='17.10';
+      root.dataset.nailRaiseReady='1';
       if(window.__ADUGAME_ART_SOURCE__?.G1R2){
-        window.__ADUGAME_ART_SOURCE__.G1R2.version='v17.10';
         window.__ADUGAME_ART_SOURCE__.G1R2.nailScene={name:'Choose me',author:'oksmith',source:'Openclipart / publicdomainq.net',license:'Public Domain'};
-        window.__ADUGAME_ART_SOURCE__.G1R2.nailTargets='raised hand 5 fingers';
+        window.__ADUGAME_ART_SOURCE__.G1R2.nailTargets='raised hand 5 fingertips — v17.21 close-up aligned';
         window.__ADUGAME_ART_SOURCE__.G1R2.generatedVisualAssets=0;
       }
-      if(window.__ADUGAME_G1_BENCHMARK_ART_V17__)window.__ADUGAME_G1_BENCHMARK_ART_V17__.version='17.10';
     };
     nail.addEventListener('load',loaded,{once:true});
     nail.addEventListener('error',()=>{root.dataset.nailRaiseReady='error';},{once:true});
@@ -40,8 +39,8 @@
       if(on){
         (scene.nails||[]).forEach((n,i)=>{const p=NAIL_POS[i]||NAIL_POS[2];if(!scene.clipped?.has(i))n.setPosition(p[0],p[1]);});
         if(focus){
-          focus.style.left=pct(753,1280);focus.style.top=pct(263,720);
-          focus.style.width=pct(132,1280);focus.style.height=pct(106,720);focus.style.opacity='1';
+          focus.style.left=pct(806,1280);focus.style.top=pct(210,720);
+          focus.style.width=pct(112,1280);focus.style.height=pct(86,720);focus.style.opacity='1';
         }
       }
     };
