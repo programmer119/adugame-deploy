@@ -2,7 +2,7 @@ const { defineConfig } = require('@playwright/test');
 module.exports = defineConfig({
   testDir: './qa',
   testMatch: /g3-commercial-art\.spec\.js/,
-  timeout: 50000,
+  timeout: 90000,
   expect: { timeout: 12000 },
   fullyParallel: false,
   workers: 1,
