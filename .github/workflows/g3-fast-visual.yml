@@ -19,7 +19,7 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: G3 commercial-art syntax gate
-        run: node --check g3-commercial-art-v1.js && node --check g3-commercial-art-v1-align.js && node --check qa/g3-commercial-art.spec.js
+        run: node --check g3-commercial-art-v1.js && node --check g3-commercial-art-v1-align.js && node --check g3-commercial-art-v2.js && node --check qa/g3-commercial-art.spec.js
       - name: Capture G3 authored scene
         run: npx playwright test --config=playwright.g3-fast.config.js
       - name: Upload G3 visual
