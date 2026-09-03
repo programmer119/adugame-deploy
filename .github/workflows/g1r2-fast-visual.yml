@@ -18,7 +18,7 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: G1R2 v17.31 syntax gate
+      - name: G1R2 v17.32 syntax gate
         run: node --check g1-benchmark-art-v17-motion.js && node --check g1-benchmark-art-v17-gamefeel.js && node --check qa/g1r2-gamefeel.spec.js
       - name: Capture G1R2 only
         run: npx playwright test --config=playwright.g1r2-fast.config.js
