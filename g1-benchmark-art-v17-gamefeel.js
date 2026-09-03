@@ -39,12 +39,12 @@
     Object.assign(badge.style,{position:'absolute',left:'50%',top:'11.4%',transform:'translate(-50%,0)',zIndex:'23',pointerEvents:'none',padding:'8px 15px',borderRadius:'999px',background:'rgba(235,255,244,.97)',border:'2px solid rgba(41,171,126,.38)',boxShadow:'0 8px 20px rgba(28,105,76,.15)',fontSize:'14px',fontWeight:'1000',color:'#155f48',opacity:'0',whiteSpace:'nowrap'});
     root.appendChild(badge);
 
-    let lastStep=Number(scene.step)||0,lastQ=(scene.mouthProgress||[]).filter(v=>v>=115).length,lastClip=scene.clipped?.size||0,lastFaceBucket=Math.floor(Math.min(100,(scene.faceWash||0)/360*100)/25),badgeToken=0,pulseCount=0;
+    let lastStep=Number(scene.step)||0,lastQ=(scene.mouthProgress||[]).filter(v=>v>=115).length,lastClip=scene.clipped?.size||0,lastFaceBucket=Math.floor(Math.min(100,(scene.faceWash||0)/360*100)/25),badgeToken=0,pulseCount=0,railSig='';
     const reduced=()=>!!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
     const pulse=(text,kind)=>{
       pulseCount+=1;root.dataset.gameFeelPulseCount=String(pulseCount);root.dataset.gameFeelLastPulse=kind;root.dataset.gameFeelLastText=text;
       const token=++badgeToken;badge.textContent=text;badge.dataset.on='1';badge.style.opacity='1';
-      if(reduced()){badge.style.transform='translate(-50%,0)';}
+      if(reduced())badge.style.transform='translate(-50%,0)';
       setTimeout(()=>{if(!badge.isConnected||token!==badgeToken)return;badge.dataset.on='0';badge.style.opacity='0';},kind==='done'?1800:760);
     };
     const segmented=(count,done)=>{
@@ -59,15 +59,19 @@
       const outer=document.createElement('div');Object.assign(outer.style,{position:'relative',width:'100%',height:'10px',borderRadius:'999px',overflow:'hidden',background:'rgba(36,125,164,.15)'});
       const fill=document.createElement('div');fill.className='g1v17-gamefeel-fill';fill.dataset.value=String(value);Object.assign(fill.style,{height:'100%',width:`${value}%`,borderRadius:'999px',background:'rgba(41,171,126,.92)',boxShadow:'0 0 0 3px rgba(41,171,126,.08)'});outer.appendChild(fill);track.appendChild(outer);
     };
-
-    const sync=()=>{
-      if(!root.isConnected||scene.scene?.key!=='G1R2')return;
-      const st=Number(scene.step)||0,q=(scene.mouthProgress||[]).filter(v=>v>=115).length,clip=scene.clipped?.size||0,face=Math.max(0,Math.min(100,Math.round((scene.faceWash||0)/360*100))),faceBucket=Math.floor(face/25);
+    const renderRail=(st,q,face,clip)=>{
+      const sig=st===1?`brush:${q}`:st===2?`wash:${face}`:st===3?`nails:${clip}`:'hidden';
+      if(sig===railSig)return;railSig=sig;
       if(st===1){rail.style.opacity='1';rail.style.transform='translateY(0)';rail.dataset.mode='brush';label.textContent=`양치 ${q}/4`;segmented(4,q);root.dataset.gameFeelRail=`brush:${q}/4`;}
       else if(st===2){rail.style.opacity='1';rail.style.transform='translateY(0)';rail.dataset.mode='wash';label.textContent=`세수 ${face}%`;continuous(face);root.dataset.gameFeelRail=`wash:${face}`;}
       else if(st===3){rail.style.opacity='1';rail.style.transform='translateY(0)';rail.dataset.mode='nails';label.textContent=`손톱 ${clip}/5`;segmented(5,clip);root.dataset.gameFeelRail=`nails:${clip}/5`;}
       else{rail.style.opacity='0';rail.style.transform='translateY(-3px)';rail.dataset.mode='';root.dataset.gameFeelRail='hidden';}
+    };
 
+    const sync=()=>{
+      if(!root.isConnected||scene.scene?.key!=='G1R2')return;
+      const st=Number(scene.step)||0,q=(scene.mouthProgress||[]).filter(v=>v>=115).length,clip=scene.clipped?.size||0,face=Math.max(0,Math.min(100,Math.round((scene.faceWash||0)/360*100))),faceBucket=Math.floor(face/25);
+      renderRail(st,q,face,clip);
       if(st===1&&q>lastQ)pulse(`양치 ${q}/4 ✓`,`brush:${q}`);
       if(st===2&&faceBucket>lastFaceBucket&&faceBucket>0&&faceBucket<4)pulse(`세수 ${Math.min(75,faceBucket*25)}% ✓`,`wash:${faceBucket*25}`);
       if(st===3&&clip>lastClip)pulse(`손톱 ${clip}/5 ✓`,`nail:${clip}`);
@@ -77,7 +81,7 @@
       root.dataset.gameFeelReady='1';root.dataset.version='17.31';
       if(window.__ADUGAME_ART_SOURCE__?.G1R2){
         window.__ADUGAME_ART_SOURCE__.G1R2.version='v17.31';
-        window.__ADUGAME_ART_SOURCE__.G1R2.dynamicGameFeel={stableVisualProgress:true,milestoneSuccessBadge:true,mobileCompact:true,reducedMotionAware:true,generatedVisualAssets:0};
+        window.__ADUGAME_ART_SOURCE__.G1R2.dynamicGameFeel={stableVisualProgress:true,milestoneSuccessBadge:true,mobileCompact:true,reducedMotionAware:true,progressDomUpdatesOnChangeOnly:true,generatedVisualAssets:0};
         window.__ADUGAME_ART_SOURCE__.G1R2.generatedVisualAssets=0;
       }
       if(window.__ADUGAME_G1_BENCHMARK_ART_V17__)window.__ADUGAME_G1_BENCHMARK_ART_V17__.version='17.31';
