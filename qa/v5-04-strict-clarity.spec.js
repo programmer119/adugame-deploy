@@ -57,7 +57,7 @@ test('strict clarity: G3 visible order conditions, hint and accepted target stay
   const r=await open(page,3,2);let a=await sceneAudit(page);
   expect(a.status).toContain('베이스');expect(a.status).toContain('활성액');expect(a.orderConditions).toEqual(['color:green','deco:flower','container:round']);
   let labels=await page.evaluate(()=>{const s=window.__ADUGAME_SCENE__();const txt=o=>o.list?.filter(x=>x?.type==='Text').map(x=>x.text).join(' ');return {base:txt(s.base),act:txt(s.activator),order:s.orderLabel.text,serve:s.serveButton.text,badgesVisible:!!s.clarityOrderBadges?.visible,badgeCount:s.clarityOrderBadges?.list?.length||0,oldOrderVisible:s.orderIcons.visible};});
-  expect(labels.base).toContain('베이스');expect(labels.act).toContain('활성액');expect(labels.order).toBe('주문 조건');expect(labels.serve).toBe('손님에게 주기');expect(labels.badgesVisible).toBe(true);expect(labels.badgeCount).toBe(3);expect(labels.oldOrderVisible).toBe(false);
+  expect(labels.base).toContain('베이스');expect(labels.act).toContain('활성액');expect(labels.order).toBe('손님 주문');expect(labels.serve).toBe('손님에게 주기');expect(labels.badgesVisible).toBe(true);expect(labels.badgeCount).toBe(3);expect(labels.oldOrderVisible).toBe(false);
 
   await dragL(page,r,[[230,230],[650,420]],180);await waitFor(page,()=>window.__ADUGAME_DEBUG__().ingredients.includes('base'));
   await dragL(page,r,[[360,230],[650,420]],180);await waitFor(page,()=>window.__ADUGAME_DEBUG__().ingredients.includes('activator'));
