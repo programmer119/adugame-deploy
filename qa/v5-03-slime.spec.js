@@ -2,6 +2,7 @@ const { test, expect } = require('@playwright/test');
 
 function map(r,x,y){return {x:r.x+x/1280*r.width,y:r.y+y/720*r.height};}
 async function clickL(page,r,x,y){const p=map(r,x,y);await page.mouse.click(p.x,p.y);}
+async function pressL(page,r,x,y,hold=90){const p=map(r,x,y);await page.mouse.move(p.x,p.y);await page.mouse.down();await page.waitForTimeout(hold);await page.mouse.up();}
 async function dragL(page,r,points,duration=240){
   const ps=points.map(([x,y])=>map(r,x,y));
   await page.mouse.move(ps[0].x,ps[0].y);await page.mouse.down();
@@ -36,9 +37,11 @@ async function serve(page,r,decoX,served){
   // Playwright's mouseup can resolve one frame before Phaser dispatches dragend.
   // Wait for the actual requested decoration to enter live game state before submitting.
   await waitFor(page,()=>{const s=window.__ADUGAME_SCENE__(),d=window.__ADUGAME_DEBUG__();return !!s?.order?.deco&&d.chosen.decos.includes(s.order.deco);},5000);
-  const button=await page.evaluate(()=>{const b=window.__ADUGAME_SCENE__().serveButton;return {x:b.x,y:b.y,input:!!b.input?.enabled,visible:b.visible!==false};});
-  expect(button.visible).toBe(true);expect(button.input).toBe(true);
-  await clickL(page,r,button.x,button.y);
+  const button=await page.evaluate(()=>{const b=window.__ADUGAME_SCENE__().serveButton,r=b.getBounds();return {x:r.centerX,y:r.centerY,w:r.width,h:r.height,input:!!b.input?.enabled,visible:b.visible!==false};});
+  expect(button.visible).toBe(true);expect(button.input).toBe(true);expect(button.w).toBeGreaterThan(90);expect(button.h).toBeGreaterThan(40);
+  // A zero-duration synthetic click can put pointerdown/pointerup in the same render frame.
+  // Press the center of the live rendered hit target for a short human-like tap instead.
+  await pressL(page,r,button.x,button.y,90);
   await waitFor(page,n=>window.__ADUGAME_DEBUG__().ordersServed>=n,9000,served);
 }
 
