@@ -25,13 +25,13 @@ test('G3 authored commercial art stays aligned and visually clean through the fu
   test.setTimeout(210000);
   await page.goto('/index.html?game=3&round=1&e2e=1',{waitUntil:'domcontentloaded'});
   await waitDebug(page,()=>window.__ADUGAME_DEBUG__?.()?.benchmarkV5==='persistent-slime-store',null,30000);
-  await waitDebug(page,()=>{const r=document.getElementById('g3-commercial-art-v1');return r&&r.dataset.ready==='1'&&r.dataset.hitAlignment==='1'&&r.dataset.v2HeroReady==='1'&&r.dataset.version==='2.2';},null,30000);
+  await waitDebug(page,()=>{const r=document.getElementById('g3-commercial-art-v1');return r&&r.dataset.ready==='1'&&r.dataset.hitAlignment==='1'&&r.dataset.v2HeroReady==='1'&&r.dataset.version==='2.3';},null,30000);
   const r=await page.locator('canvas').boundingBox();expect(r).toBeTruthy();
   const meta=await page.evaluate(()=>({root:{...document.getElementById('g3-commercial-art-v1').dataset},art:window.__ADUGAME_ART_SOURCE__?.G3,imgs:[...document.querySelectorAll('#g3-commercial-art-v1 img')].map(x=>({cls:x.className,naturalWidth:x.naturalWidth,naturalHeight:x.naturalHeight,src:x.src,display:getComputedStyle(x).display}))}));
-  expect(meta.root.generatedVisualAssets).toBe('0');expect(meta.root.artQuality).toBe('authored-scene-v2');expect(meta.root.visualPolish).toBe('v2.2');expect(meta.art.generatedVisualAssets).toBe(0);expect(meta.art.version).toBe('commercial-v2.2');expect(meta.imgs.filter(x=>x.naturalWidth>0).length).toBeGreaterThanOrEqual(6);expect(meta.imgs.find(x=>x.cls==='g3-clerk')?.src).toContain('/300873');
+  expect(meta.root.generatedVisualAssets).toBe('0');expect(meta.root.artQuality).toBe('authored-scene-v2');expect(meta.root.visualPolish).toBe('v2.3');expect(meta.art.generatedVisualAssets).toBe(0);expect(meta.art.version).toBe('commercial-v2.3');expect(meta.imgs.filter(x=>x.naturalWidth>0).length).toBeGreaterThanOrEqual(6);expect(meta.imgs.find(x=>x.cls==='g3-clerk')?.src).toContain('/300873');
   expect(meta.imgs.filter(x=>x.cls==='g3-finished-jar'&&x.display!=='none')).toHaveLength(0);
   expect(await page.locator('.g3-workbench').evaluate(e=>getComputedStyle(e).display)).toBe('none');
-  expect(await page.locator('.g3-v22-sold').textContent()).toContain('0/2');
+  expect(await page.locator('.g3-v23-sold').textContent()).toContain('0/2');
   expect(parseFloat(await page.locator('.g3-focus').evaluate(e=>getComputedStyle(e).borderWidth))).toBeLessThanOrEqual(3);
   expect(parseFloat(await page.locator('.g3-supply-soccer').evaluate(e=>getComputedStyle(e).opacity))).toBeLessThan(.05);
 
@@ -55,7 +55,7 @@ test('G3 authored commercial art stays aligned and visually clean through the fu
   await serveLive(page,r,0);
   await waitDebug(page,()=>{const d=window.__ADUGAME_DEBUG__();return d.ordersServed===1&&d.orderIndex===1&&d.ingredients.length===0&&!d.mixed;},null,12000);
   await page.waitForTimeout(420);
-  expect(await page.locator('.g3-v22-sold').textContent()).toContain('1/2');
+  expect(await page.locator('.g3-v23-sold').textContent()).toContain('1/2');
   expect(await page.locator('#g3-commercial-art-v1').getAttribute('data-legacy-jar-visible')).toBe('0');
   expect(parseFloat(await page.locator('.g3-supply-soccer').evaluate(e=>getComputedStyle(e).opacity))).toBeGreaterThan(.9);
   await shot(page,'G3-4-next-customer.png');
@@ -75,14 +75,16 @@ test('G3 authored commercial art stays aligned and visually clean through the fu
   await shot(page,'G3-6-second-ready.png');
 
   await serveLive(page,r,1);
-  await waitDebug(page,()=>{const d=window.__ADUGAME_DEBUG__();return d.roundComplete===true&&d.ordersServed===2;},null,12000);
+  await waitDebug(page,()=>{const d=window.__ADUGAME_DEBUG__();const root=document.getElementById('g3-commercial-art-v1');return d.roundComplete===true&&d.ordersServed===2&&root?.dataset.completionCta==='hidden'&&root?.dataset.roundComplete==='true';},null,12000);
   await page.waitForTimeout(420);
-  expect(await page.locator('.g3-v22-sold').textContent()).toContain('2/2');
+  expect(await page.locator('.g3-v23-sold').textContent()).toContain('2/2 · 주문 완료');
   expect(await page.locator('#g3-commercial-art-v1').getAttribute('data-legacy-jar-visible')).toBe('0');
+  const completionUi=await page.evaluate(()=>{const s=window.__ADUGAME_SCENE__(),root=document.getElementById('g3-commercial-art-v1');return{serveVisible:s.serveButton?.visible!==false,serveInput:!!s.serveButton?.input?.enabled,serveDomOpacity:parseFloat(getComputedStyle(root.querySelector('.g3-serve')).opacity),focusOpacity:parseFloat(getComputedStyle(root.querySelector('.g3-focus')).opacity),orderOpacity:parseFloat(getComputedStyle(root.querySelector('.g3-order-card')).opacity),completionCta:root.dataset.completionCta};});
+  expect(completionUi.serveVisible).toBe(false);expect(completionUi.serveInput).toBe(false);expect(completionUi.serveDomOpacity).toBeLessThan(.05);expect(completionUi.focusOpacity).toBeLessThan(.05);expect(completionUi.orderOpacity).toBeLessThan(.75);expect(completionUi.completionCta).toBe('hidden');
   await shot(page,'G3-7-complete.png');
 
   const end=await page.evaluate(()=>({debug:window.__ADUGAME_DEBUG__(),root:{...document.getElementById('g3-commercial-art-v1').dataset},art:window.__ADUGAME_ART_SOURCE__?.G3}));
   expect(end.debug.roundComplete).toBe(true);expect(end.debug.ordersServed).toBe(2);expect(end.debug.shelfCount).toBe(2);expect(end.debug.coinEarned).toBe(6);expect(end.debug.coinBalance).toBe(4);expect(end.debug.supplyStock.soccer).toBe(2);
-  expect(end.root.generatedVisualAssets).toBe('0');expect(end.root.finishedDisplay).toBe('completion-badge');expect(end.root.legacyJarVisible).toBe('0');expect(end.art.generatedVisualAssets).toBe(0);
-  fs.writeFileSync(path.join(OUT,'G3-debug.json'),JSON.stringify(end,null,2));
+  expect(end.root.generatedVisualAssets).toBe('0');expect(end.root.finishedDisplay).toBe('completion-badge');expect(end.root.legacyJarVisible).toBe('0');expect(end.root.completionCta).toBe('hidden');expect(end.root.roundComplete).toBe('true');expect(end.art.generatedVisualAssets).toBe(0);expect(end.art.completionPresentation).toContain('hidden');
+  fs.writeFileSync(path.join(OUT,'G3-debug.json'),JSON.stringify({...end,completionUi},null,2));
 });
