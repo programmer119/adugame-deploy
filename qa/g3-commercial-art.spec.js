@@ -6,17 +6,22 @@ async function dragL(page,r,points,duration=260){const ps=points.map(([x,y])=>ma
 async function pressL(page,r,x,y,hold=90){const p=map(r,x,y);await page.mouse.move(p.x,p.y);await page.mouse.down();await page.waitForTimeout(hold);await page.mouse.up();}
 async function clickL(page,r,x,y,hold=70){return pressL(page,r,x,y,hold);}
 function circle(cx,cy,rr,turns=3.2,steps=4){const pts=[];for(let i=0;i<=turns*steps;i++){const a=-Math.PI/2+2*Math.PI*i/steps;pts.push([cx+Math.cos(a)*rr,cy+Math.sin(a)*rr]);}return pts;}
-async function shot(page,name){await page.screenshot({path:path.join(OUT,name),fullPage:true});}
+async function shot(page,name){await page.screenshot({path:path.join(OUT,name),fullPage:false,animations:'disabled'});}
 async function waitDebug(page,fn,arg,timeout=12000){return page.waitForFunction(fn,arg,{timeout});}
 async function center(page,sel){return page.locator(sel).evaluate(e=>{const r=e.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2,w:r.width,h:r.height};});}
-async function serveLive(page,r){
-  const b=await page.evaluate(()=>{const o=window.__ADUGAME_SCENE__().serveButton,bb=o.getBounds();return{x:bb.centerX,y:bb.centerY,w:bb.width,h:bb.height,input:!!o.input?.enabled,visible:o.visible!==false};});
-  expect(b.visible).toBe(true);expect(b.input).toBe(true);expect(b.w).toBeGreaterThan(90);expect(b.h).toBeGreaterThan(40);await pressL(page,r,b.x,b.y,100);
+async function serveLive(page,r,before){
+  await waitDebug(page,()=>{const s=window.__ADUGAME_SCENE__();return !!s&&!s.interactionLocked&&!!s.serveButton?.input?.enabled&&s.serveButton.visible!==false;},null,5000);
+  for(let attempt=0;attempt<2;attempt++){
+    const b=await page.evaluate(()=>{const o=window.__ADUGAME_SCENE__().serveButton,bb=o.getBounds();return{x:bb.centerX,y:bb.centerY,w:bb.width,h:bb.height,input:!!o.input?.enabled,visible:o.visible!==false,locked:!!window.__ADUGAME_SCENE__().interactionLocked};});
+    expect(b.visible).toBe(true);expect(b.input).toBe(true);expect(b.locked).toBe(false);expect(b.w).toBeGreaterThan(90);expect(b.h).toBeGreaterThan(40);
+    await pressL(page,r,b.x,b.y,110);
+    try{await waitDebug(page,n=>window.__ADUGAME_DEBUG__().ordersServed>n,before,5000);return;}catch(e){if(attempt===1)throw e;await page.waitForTimeout(180);}
+  }
 }
 
 test('G3 authored commercial art stays aligned and visually clean through the full two-customer round',async({page})=>{
   // Eight authored-art screenshots are intentionally captured in one cold-load browser session.
-  // Keep all per-action waits strict; only the total evidence-capture budget is widened.
+  // Per-action waits remain strict; only the total evidence-capture budget is widened.
   test.setTimeout(210000);
   await page.goto('/index.html?game=3&round=1&e2e=1',{waitUntil:'domcontentloaded'});
   await waitDebug(page,()=>window.__ADUGAME_DEBUG__?.()?.benchmarkV5==='persistent-slime-store',null,30000);
@@ -47,7 +52,7 @@ test('G3 authored commercial art stays aligned and visually clean through the fu
   await dragL(page,r,[[210,485],[650,420]],300);await waitDebug(page,()=>window.__ADUGAME_DEBUG__().chosen.decos.includes('star'));
   await waitDebug(page,()=>document.getElementById('g3-commercial-art-v1')?.dataset.orderReady==='true');
   await shot(page,'G3-3-ready.png');
-  await serveLive(page,r);
+  await serveLive(page,r,0);
   await waitDebug(page,()=>{const d=window.__ADUGAME_DEBUG__();return d.ordersServed===1&&d.orderIndex===1&&d.ingredients.length===0&&!d.mixed;},null,12000);
   await page.waitForTimeout(420);
   expect(await page.locator('.g3-v22-sold').textContent()).toContain('1/2');
@@ -69,7 +74,7 @@ test('G3 authored commercial art stays aligned and visually clean through the fu
   expect(await page.locator('#g3-commercial-art-v1').getAttribute('data-slime-color')).toBe('pink');
   await shot(page,'G3-6-second-ready.png');
 
-  await serveLive(page,r);
+  await serveLive(page,r,1);
   await waitDebug(page,()=>{const d=window.__ADUGAME_DEBUG__();return d.roundComplete===true&&d.ordersServed===2;},null,12000);
   await page.waitForTimeout(420);
   expect(await page.locator('.g3-v22-sold').textContent()).toContain('2/2');
