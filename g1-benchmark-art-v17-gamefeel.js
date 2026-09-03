@@ -11,11 +11,11 @@
 
     const style=document.createElement('style');
     style.textContent=`
-      @keyframes g1gfPop{0%{opacity:0;transform:translate(-50%,-8px) scale(.86)}45%{opacity:1;transform:translate(-50%,0) scale(1.08)}100%{opacity:1;transform:translate(-50%,0) scale(1)}}
+      @keyframes g1gfPop{0%{transform:translate(-50%,-5px) scale(.90)}50%{transform:translate(-50%,0) scale(1.06)}100%{transform:translate(-50%,0) scale(1)}}
       #g1r2-v17-overlay .g1v17-gamefeel-rail{transition:opacity .16s ease,transform .16s ease;}
       #g1r2-v17-overlay .g1v17-gamefeel-seg{transition:background .18s ease,transform .18s ease,box-shadow .18s ease;}
       #g1r2-v17-overlay .g1v17-gamefeel-fill{transition:width .18s ease;}
-      #g1r2-v17-overlay .g1v17-gamefeel-badge[data-on="1"]{animation:g1gfPop .26s ease-out both;}
+      #g1r2-v17-overlay .g1v17-gamefeel-badge[data-on="1"]{animation:g1gfPop .24s ease-out both;}
       @media (max-height:480px){
         #g1r2-v17-overlay .g1v17-gamefeel-rail,#g1r2-v17-overlay .g1v17-gamefeel-badge{display:none!important;}
       }
@@ -36,7 +36,7 @@
 
     const badge=document.createElement('div');
     badge.className='g1v17-gamefeel-badge';badge.dataset.on='0';badge.setAttribute('aria-live','polite');
-    Object.assign(badge.style,{position:'absolute',left:'50%',top:'11.4%',transform:'translate(-50%,0)',zIndex:'23',pointerEvents:'none',padding:'8px 15px',borderRadius:'999px',background:'rgba(235,255,244,.97)',border:'2px solid rgba(41,171,126,.38)',boxShadow:'0 8px 20px rgba(28,105,76,.15)',fontSize:'14px',fontWeight:'1000',color:'#155f48',opacity:'0',whiteSpace:'nowrap'});
+    Object.assign(badge.style,{position:'absolute',left:'17%',top:'10.2%',transform:'translate(-50%,0)',zIndex:'91',pointerEvents:'none',padding:'8px 15px',borderRadius:'999px',background:'rgba(235,255,244,.98)',border:'2px solid rgba(41,171,126,.46)',boxShadow:'0 8px 20px rgba(28,105,76,.16)',fontSize:'14px',fontWeight:'1000',color:'#155f48',opacity:'0',visibility:'hidden',whiteSpace:'nowrap',willChange:'transform,opacity'});
     root.appendChild(badge);
 
     const MILESTONE_HOLD_MS=1250;
@@ -45,9 +45,10 @@
     const reduced=()=>!!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
     const pulse=(text,kind)=>{
       pulseCount+=1;root.dataset.gameFeelPulseCount=String(pulseCount);root.dataset.gameFeelLastPulse=kind;root.dataset.gameFeelLastText=text;
-      const token=++badgeToken;badge.textContent=text;badge.dataset.on='1';badge.style.opacity='1';
-      if(reduced())badge.style.transform='translate(-50%,0)';
-      setTimeout(()=>{if(!badge.isConnected||token!==badgeToken)return;badge.dataset.on='0';badge.style.opacity='0';},kind==='done'?DONE_HOLD_MS:MILESTONE_HOLD_MS);
+      const token=++badgeToken;badge.textContent=text;badge.dataset.on='0';badge.style.opacity='1';badge.style.visibility='visible';
+      if(!reduced()){void badge.offsetWidth;badge.dataset.on='1';}
+      else{badge.dataset.on='1';badge.style.transform='translate(-50%,0)';}
+      setTimeout(()=>{if(!badge.isConnected||token!==badgeToken)return;badge.dataset.on='0';badge.style.opacity='0';badge.style.visibility='hidden';},kind==='done'?DONE_HOLD_MS:MILESTONE_HOLD_MS);
     };
     const segmented=(count,done)=>{
       track.replaceChildren();
@@ -88,7 +89,7 @@
       root.dataset.gameFeelReady='1';root.dataset.version='17.31';
       if(window.__ADUGAME_ART_SOURCE__?.G1R2){
         window.__ADUGAME_ART_SOURCE__.G1R2.version='v17.31';
-        window.__ADUGAME_ART_SOURCE__.G1R2.dynamicGameFeel={stableVisualProgress:true,milestoneSuccessBadge:true,brushFeedbackOnRelease:true,mobileCompact:true,reducedMotionAware:true,progressDomUpdatesOnChangeOnly:true,milestoneHoldMs:MILESTONE_HOLD_MS,doneHoldMs:DONE_HOLD_MS,generatedVisualAssets:0};
+        window.__ADUGAME_ART_SOURCE__.G1R2.dynamicGameFeel={stableVisualProgress:true,milestoneSuccessBadge:true,brushFeedbackOnRelease:true,stableBadgeOpacity:true,badgeLocation:'upper-left-clear-zone',mobileCompact:true,reducedMotionAware:true,progressDomUpdatesOnChangeOnly:true,milestoneHoldMs:MILESTONE_HOLD_MS,doneHoldMs:DONE_HOLD_MS,generatedVisualAssets:0};
         window.__ADUGAME_ART_SOURCE__.G1R2.generatedVisualAssets=0;
       }
       if(window.__ADUGAME_G1_BENCHMARK_ART_V17__)window.__ADUGAME_G1_BENCHMARK_ART_V17__.version='17.31';
