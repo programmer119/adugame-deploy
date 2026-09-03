@@ -10,18 +10,22 @@ async function shot(page,name){await page.screenshot({path:path.join(OUT,name),f
 async function waitDebug(page,fn,arg,timeout=12000){return page.waitForFunction(fn,arg,{timeout});}
 async function center(page,sel){return page.locator(sel).evaluate(e=>{const r=e.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2,w:r.width,h:r.height};});}
 async function serveLive(page,r,before){
-  await waitDebug(page,()=>{const s=window.__ADUGAME_SCENE__();return !!s&&!s.interactionLocked&&!!s.serveButton?.input?.enabled&&s.serveButton.visible!==false;},null,5000);
+  // Verify the user-visible contract: a valid unlocked order has a visible live target,
+  // and releasing on that target advances the actual order. Internal Phaser input objects
+  // may be replaced by legacy wrappers, so they are telemetry, not the acceptance criterion.
+  await waitDebug(page,()=>{const s=window.__ADUGAME_SCENE__();return !!s&&!s.interactionLocked&&!s.roundComplete&&!!s.mixed&&s.chosen?.color===s.order?.color&&s.chosen?.decos?.includes(s.order?.deco)&&(!s.order?.container||s.chosen?.container===s.order.container)&&s.serveButton?.visible!==false;},null,5000);
   for(let attempt=0;attempt<2;attempt++){
-    const b=await page.evaluate(()=>{const o=window.__ADUGAME_SCENE__().serveButton,bb=o.getBounds();return{x:bb.centerX,y:bb.centerY,w:bb.width,h:bb.height,input:!!o.input?.enabled,visible:o.visible!==false,locked:!!window.__ADUGAME_SCENE__().interactionLocked};});
-    expect(b.visible).toBe(true);expect(b.input).toBe(true);expect(b.locked).toBe(false);expect(b.w).toBeGreaterThan(90);expect(b.h).toBeGreaterThan(40);
+    const b=await page.evaluate(()=>{const s=window.__ADUGAME_SCENE__(),o=s.serveButton,bb=o.getBounds();return{x:bb.centerX,y:bb.centerY,w:bb.width,h:bb.height,input:!!o.input?.enabled,visible:o.visible!==false,locked:!!s.interactionLocked,ready:!!window.__ADUGAME_DEBUG__()?.serveReadyInvariant,nativeCount:window.__ADUGAME_DEBUG__()?.serveNativePointerCount||0};});
+    expect(b.visible).toBe(true);expect(b.locked).toBe(false);expect(b.ready).toBe(true);expect(b.w).toBeGreaterThan(90);expect(b.h).toBeGreaterThan(40);
     await pressL(page,r,b.x,b.y,110);
-    try{await waitDebug(page,n=>window.__ADUGAME_DEBUG__().ordersServed>n,before,5000);return;}catch(e){if(attempt===1)throw e;await page.waitForTimeout(180);}
+    try{await waitDebug(page,n=>window.__ADUGAME_DEBUG__().ordersServed>n,before,5000);return;}catch(e){
+      const diag=await page.evaluate(()=>({debug:window.__ADUGAME_DEBUG__(),input:!!window.__ADUGAME_SCENE__()?.serveButton?.input?.enabled}));console.log('G3_SERVE_DIAG',JSON.stringify(diag));
+      if(attempt===1)throw e;await page.waitForTimeout(180);
+    }
   }
 }
 
 test('G3 authored commercial art stays aligned and visually clean through the full two-customer round',async({page})=>{
-  // Eight authored-art screenshots are intentionally captured in one cold-load browser session.
-  // Per-action waits remain strict; only the total evidence-capture budget is widened.
   test.setTimeout(210000);
   await page.goto('/index.html?game=3&round=1&e2e=1',{waitUntil:'domcontentloaded'});
   await waitDebug(page,()=>window.__ADUGAME_DEBUG__?.()?.benchmarkV5==='persistent-slime-store',null,30000);
@@ -35,13 +39,11 @@ test('G3 authored commercial art stays aligned and visually clean through the fu
   expect(parseFloat(await page.locator('.g3-focus').evaluate(e=>getComputedStyle(e).borderWidth))).toBeLessThanOrEqual(3);
   expect(parseFloat(await page.locator('.g3-supply-soccer').evaluate(e=>getComputedStyle(e).opacity))).toBeLessThan(.05);
 
-  // Visible controls stay exactly on the Phaser hit targets.
   for(const [sel,x,y] of [['.g3-color-blue',210,355],['.g3-color-green',325,355],['.g3-color-pink',440,355],['.g3-supply-soccer',596,188]]){
     const c=await center(page,sel),p=map(r,x,y);expect(Math.abs(c.x-p.x)).toBeLessThan(12);expect(Math.abs(c.y-p.y)).toBeLessThan(12);
   }
   await shot(page,'G3-0-start.png');
 
-  // Customer 1: blue + star.
   await dragL(page,r,[[230,230],[650,420]],280);await waitDebug(page,()=>window.__ADUGAME_DEBUG__().ingredients.includes('base'));
   await dragL(page,r,[[360,230],[650,420]],280);await waitDebug(page,()=>window.__ADUGAME_DEBUG__().ingredients.includes('activator'));
   await page.waitForTimeout(520);await shot(page,'G3-1-ingredients.png');
@@ -60,11 +62,9 @@ test('G3 authored commercial art stays aligned and visually clean through the fu
   expect(parseFloat(await page.locator('.g3-supply-soccer').evaluate(e=>getComputedStyle(e).opacity))).toBeGreaterThan(.9);
   await shot(page,'G3-4-next-customer.png');
 
-  // First sale earns 3 coins; buy finite soccer-decoration stock and verify the shop presentation.
   await clickL(page,r,596,188,90);await waitDebug(page,()=>window.__ADUGAME_DEBUG__().supplyStock.soccer===2);
   await shot(page,'G3-5-shop-stock.png');
 
-  // Customer 2: pink + heart. Complete the real round, not just the shop reveal.
   await dragL(page,r,[[230,230],[650,420]],280);await waitDebug(page,()=>window.__ADUGAME_DEBUG__().ingredients.includes('base'));
   await dragL(page,r,[[360,230],[650,420]],280);await waitDebug(page,()=>window.__ADUGAME_DEBUG__().ingredients.includes('activator'));
   await clickL(page,r,440,355,80);await waitDebug(page,()=>window.__ADUGAME_DEBUG__().chosen.color==='pink');
@@ -84,7 +84,7 @@ test('G3 authored commercial art stays aligned and visually clean through the fu
   await shot(page,'G3-7-complete.png');
 
   const end=await page.evaluate(()=>({debug:window.__ADUGAME_DEBUG__(),root:{...document.getElementById('g3-commercial-art-v1').dataset},art:window.__ADUGAME_ART_SOURCE__?.G3}));
-  expect(end.debug.roundComplete).toBe(true);expect(end.debug.ordersServed).toBe(2);expect(end.debug.shelfCount).toBe(2);expect(end.debug.coinEarned).toBe(6);expect(end.debug.coinBalance).toBe(4);expect(end.debug.supplyStock.soccer).toBe(2);
+  expect(end.debug.roundComplete).toBe(true);expect(end.debug.ordersServed).toBe(2);expect(end.debug.shelfCount).toBe(2);expect(end.debug.coinEarned).toBe(6);expect(end.debug.coinBalance).toBe(4);expect(end.debug.supplyStock.soccer).toBe(2);expect(end.debug.serveNativePointerCount).toBeGreaterThanOrEqual(2);
   expect(end.root.generatedVisualAssets).toBe('0');expect(end.root.finishedDisplay).toBe('completion-badge');expect(end.root.legacyJarVisible).toBe('0');expect(end.root.completionCta).toBe('hidden');expect(end.root.roundComplete).toBe('true');expect(end.art.generatedVisualAssets).toBe(0);expect(end.art.completionPresentation).toContain('hidden');
   fs.writeFileSync(path.join(OUT,'G3-debug.json'),JSON.stringify({...end,completionUi},null,2));
 });
