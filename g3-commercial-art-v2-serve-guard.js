@@ -1,11 +1,11 @@
-// ADUGAME G3 commercial-art v2.34 — ready-order input invariant.
+// ADUGAME G3 commercial-art v2.35 — ready-order input invariant.
 // A valid, unlocked order must keep an actionable serve button until the real serve path begins.
 (() => {
   if(typeof CraftRound!=='function')return;
   const ready=s=>!!s&&!s.roundComplete&&!s.interactionLocked&&!!s.mixed&&s.chosen?.color===s.order?.color&&!!s.order?.deco&&s.chosen?.decos?.includes(s.order.deco)&&(!s.order?.container||s.chosen?.container===s.order.container);
 
   // The real serve path intentionally disables the button before setting interactionLocked.
-  // Mark only that synchronous call as allowed so visual/guidance wrappers cannot steal the hit target.
+  // Mark only that synchronous call as allowed so all other wrappers remain unable to steal the hit target.
   const priorServe=CraftRound.prototype.serve;
   CraftRound.prototype.serve=function(...args){
     this.__g3ServeDisableAllowed=true;
@@ -15,28 +15,38 @@
   function attach(scene){
     if(scene.__g3ServeReadyGuard||!scene.scene?.key?.startsWith('G3R'))return;
     scene.__g3ServeReadyGuard=true;
-    const guardEnabledProperty=live=>{
-      const input=live?.input;
-      if(!input||input.__g3ReadyEnabledGuard)return;
-      const desc=Object.getOwnPropertyDescriptor(input,'enabled');
-      if(desc&&desc.configurable===false)return;
-      let raw=desc?.get?!!desc.get.call(input):input.enabled!==false;
+    const b=scene.serveButton;
+
+    // Phaser may replace the InteractiveObject when setInteractive() is called. Guard the
+    // GameObject.input property itself so every replacement is normalized before any consumer reads it.
+    if(b&&!b.__g3InputPropertyGuarded){
+      b.__g3InputPropertyGuarded=true;
+      let rawInput=b.input||null;
       try{
-        Object.defineProperty(input,'enabled',{
+        Object.defineProperty(b,'input',{
           configurable:true,enumerable:true,
-          get(){return ready(scene)&&!scene.__g3ServeDisableAllowed?true:raw;},
-          set(v){
-            if(v===false&&ready(scene)&&!scene.__g3ServeDisableAllowed){
-              scene.g3ServeReadyBlockedEnabledCount=(scene.g3ServeReadyBlockedEnabledCount||0)+1;
-              scene.g3ServeReadyLastBlockedAt=scene.time?.now||0;raw=true;return;
+          get(){
+            if(ready(scene)&&!scene.__g3ServeDisableAllowed&&rawInput){
+              if(rawInput.enabled===false){
+                scene.g3ServeReadyReadRepairCount=(scene.g3ServeReadyReadRepairCount||0)+1;
+                scene.g3ServeReadyLastRepairAt=scene.time?.now||0;
+              }
+              rawInput.enabled=true;
             }
-            raw=!!v;
+            return rawInput;
+          },
+          set(v){
+            rawInput=v||null;
+            if(ready(scene)&&!scene.__g3ServeDisableAllowed&&rawInput){
+              rawInput.enabled=true;
+              scene.g3ServeReadyInputReplacementCount=(scene.g3ServeReadyInputReplacementCount||0)+1;
+              scene.g3ServeReadyLastRepairAt=scene.time?.now||0;
+            }
           }
         });
-        input.__g3ReadyEnabledGuard=true;
       }catch(_){ }
-    };
-    const b=scene.serveButton;
+    }
+
     if(b&&!b.__g3DisableGuarded){
       b.__g3DisableGuarded=true;
       if(typeof b.disableInteractive==='function'){
@@ -45,8 +55,8 @@
           if(ready(scene)&&!scene.__g3ServeDisableAllowed){
             scene.g3ServeReadyBlockedDisableCount=(scene.g3ServeReadyBlockedDisableCount||0)+1;
             scene.g3ServeReadyLastBlockedAt=scene.time?.now||0;
-            if(!this.input)this.setInteractive({useHandCursor:true});
-            guardEnabledProperty(this);if(this.input)this.input.enabled=true;return this;
+            const i=this.input;if(i)i.enabled=true;else this.setInteractive({useHandCursor:true});
+            return this;
           }
           return originalDisable(...args);
         };
@@ -62,6 +72,7 @@
         };
       }
     }
+
     const sync=()=>{
       if(!scene.sys?.isActive?.())return;
       const live=scene.serveButton;if(!live)return;
@@ -70,9 +81,9 @@
         scene.g3ServeReadyRepairCount=(scene.g3ServeReadyRepairCount||0)+1;
         scene.g3ServeReadyLastRepairAt=scene.time?.now||0;
       }
-      guardEnabledProperty(live);
-      if(ready(scene)&&live.visible!==false&&live.input&&!live.input.enabled){
-        live.input.enabled=true;
+      const input=live.input;
+      if(ready(scene)&&live.visible!==false&&input&&!input.enabled){
+        input.enabled=true;
         scene.g3ServeReadyRepairCount=(scene.g3ServeReadyRepairCount||0)+1;
         scene.g3ServeReadyLastRepairAt=scene.time?.now||0;
       }
@@ -80,10 +91,11 @@
     scene.events.on('postupdate',sync);
     scene.game?.events?.on?.('poststep',sync);
     sync();
+
     const priorDebug=scene.debugState?.bind(scene);
     if(priorDebug&&!scene.__g3ServeDebugWrapped){
       scene.__g3ServeDebugWrapped=true;
-      scene.debugState=function(){return {...priorDebug(),serveReadyInvariant:ready(scene),serveInputEnabled:!!scene.serveButton?.input?.enabled,serveReadyRepairCount:scene.g3ServeReadyRepairCount||0,serveReadyBlockedDisableCount:scene.g3ServeReadyBlockedDisableCount||0,serveReadyBlockedRemoveCount:scene.g3ServeReadyBlockedRemoveCount||0,serveReadyBlockedEnabledCount:scene.g3ServeReadyBlockedEnabledCount||0,serveReadyLastRepairAt:scene.g3ServeReadyLastRepairAt||0,serveReadyLastBlockedAt:scene.g3ServeReadyLastBlockedAt||0};};
+      scene.debugState=function(){return {...priorDebug(),serveReadyInvariant:ready(scene),serveInputEnabled:!!scene.serveButton?.input?.enabled,serveReadyRepairCount:scene.g3ServeReadyRepairCount||0,serveReadyReadRepairCount:scene.g3ServeReadyReadRepairCount||0,serveReadyInputReplacementCount:scene.g3ServeReadyInputReplacementCount||0,serveReadyBlockedDisableCount:scene.g3ServeReadyBlockedDisableCount||0,serveReadyBlockedRemoveCount:scene.g3ServeReadyBlockedRemoveCount||0,serveReadyLastRepairAt:scene.g3ServeReadyLastRepairAt||0,serveReadyLastBlockedAt:scene.g3ServeReadyLastBlockedAt||0};};
     }
     const cleanup=()=>{
       scene.game?.events?.off?.('poststep',sync);
@@ -93,5 +105,5 @@
   }
   const priorCreate=CraftRound.prototype.create;
   CraftRound.prototype.create=function(){priorCreate.call(this);this.time?.delayedCall?.(20,()=>attach(this));};
-  window.__ADUGAME_G3_COMMERCIAL_ART_V2_SERVE_GUARD__={loaded:true,version:'2.34',readyOrderInputInvariant:true,blockedForeignDisable:true,blockedForeignRemove:true,guardedEnabledProperty:true,realServeDisableAllowed:true,postStepInvariant:true,generatedVisualAssets:0};
+  window.__ADUGAME_G3_COMMERCIAL_ART_V2_SERVE_GUARD__={loaded:true,version:'2.35',readyOrderInputInvariant:true,gameObjectInputPropertyGuard:true,inputReplacementSafe:true,blockedForeignDisable:true,blockedForeignRemove:true,realServeDisableAllowed:true,postStepInvariant:true,generatedVisualAssets:0};
 })();
