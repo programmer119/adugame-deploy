@@ -41,7 +41,7 @@
 
     const MILESTONE_HOLD_MS=1250;
     const DONE_HOLD_MS=1800;
-    let lastStep=Number(scene.step)||0,lastQ=(scene.mouthProgress||[]).filter(v=>v>=115).length,lastClip=scene.clipped?.size||0,lastFaceBucket=Math.floor(Math.min(100,(scene.faceWash||0)/360*100)/25),badgeToken=0,pulseCount=0,railSig='';
+    let lastStep=Number(scene.step)||0,lastQ=(scene.mouthProgress||[]).filter(v=>v>=115).length,lastClip=scene.clipped?.size||0,lastFaceBucket=Math.floor(Math.min(100,(scene.faceWash||0)/360*100)/25),badgeToken=0,pulseCount=0,railSig='',pendingBrush=0;
     const reduced=()=>!!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
     const pulse=(text,kind)=>{
       pulseCount+=1;root.dataset.gameFeelPulseCount=String(pulseCount);root.dataset.gameFeelLastPulse=kind;root.dataset.gameFeelLastText=text;
@@ -73,8 +73,13 @@
     const sync=()=>{
       if(!root.isConnected||scene.scene?.key!=='G1R2')return;
       const st=Number(scene.step)||0,q=(scene.mouthProgress||[]).filter(v=>v>=115).length,clip=scene.clipped?.size||0,face=Math.max(0,Math.min(100,Math.round((scene.faceWash||0)/360*100))),faceBucket=Math.floor(face/25);
+      const dbg=scene.debugState?.()||{},active=dbg.g1r2V17Input?.active||null;
       renderRail(st,q,face,clip);
-      if(st===1&&q>lastQ)pulse(`양치 ${q}/4 ✓`,`brush:${q}`);
+      if((st===1||st===2)&&q>lastQ)pendingBrush=q;
+      if(pendingBrush&&active!=='brush'){
+        const completed=pendingBrush;pendingBrush=0;
+        pulse(completed>=4?'양치 완료 ✓':`양치 ${completed}/4 ✓`,`brush:${completed}`);
+      }
       if(st===2&&faceBucket>lastFaceBucket&&faceBucket>0&&faceBucket<4)pulse(`세수 ${Math.min(75,faceBucket*25)}% ✓`,`wash:${faceBucket*25}`);
       if(st===3&&clip>lastClip)pulse(`손톱 ${clip}/5 ✓`,`nail:${clip}`);
       if(st>=4&&lastStep<4)pulse('모두 완료 ✓','done');
@@ -83,7 +88,7 @@
       root.dataset.gameFeelReady='1';root.dataset.version='17.31';
       if(window.__ADUGAME_ART_SOURCE__?.G1R2){
         window.__ADUGAME_ART_SOURCE__.G1R2.version='v17.31';
-        window.__ADUGAME_ART_SOURCE__.G1R2.dynamicGameFeel={stableVisualProgress:true,milestoneSuccessBadge:true,mobileCompact:true,reducedMotionAware:true,progressDomUpdatesOnChangeOnly:true,milestoneHoldMs:MILESTONE_HOLD_MS,doneHoldMs:DONE_HOLD_MS,generatedVisualAssets:0};
+        window.__ADUGAME_ART_SOURCE__.G1R2.dynamicGameFeel={stableVisualProgress:true,milestoneSuccessBadge:true,brushFeedbackOnRelease:true,mobileCompact:true,reducedMotionAware:true,progressDomUpdatesOnChangeOnly:true,milestoneHoldMs:MILESTONE_HOLD_MS,doneHoldMs:DONE_HOLD_MS,generatedVisualAssets:0};
         window.__ADUGAME_ART_SOURCE__.G1R2.generatedVisualAssets=0;
       }
       if(window.__ADUGAME_G1_BENCHMARK_ART_V17__)window.__ADUGAME_G1_BENCHMARK_ART_V17__.version='17.31';
