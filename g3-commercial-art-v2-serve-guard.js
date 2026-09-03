@@ -1,4 +1,4 @@
-// ADUGAME G3 commercial-art v2.36 — visible serve-button reliability invariant.
+// ADUGAME G3 commercial-art v2.37 — visible serve-button reliability invariant.
 // A valid unlocked order must submit when the user releases on the visible serve button,
 // even if a legacy Phaser wrapper replaces/disables its internal InteractiveObject.
 (() => {
@@ -51,8 +51,11 @@
       }
     }
 
-    // User-visible reliability path. It is tied to the same live Phaser button bounds and
-    // invokes the same serve() method; it does not bypass order validation or scoring.
+    // User-visible reliability path. IMPORTANT: do not call scene.serve() synchronously from
+    // the DOM capture phase. Doing so disables the Phaser InteractiveObject before Phaser has
+    // finished dispatching the same pointerup and can leave the scene locked with its Clock no
+    // longer advancing. Record the real visible click, allow Phaser to handle it first, then
+    // invoke the same canonical serve() only when the order is still ready/unlocked afterward.
     const nativePointerUp=e=>{
       if(!canvas||!ready(scene)||scene.roundComplete)return;
       const cr=canvas.getBoundingClientRect();if(!cr.width||!cr.height)return;
@@ -60,21 +63,28 @@
       const live=scene.serveButton;if(!live||live.visible===false)return;
       let bb;try{bb=live.getBounds?.();}catch(_){bb=null;}
       if(!bb||x<bb.left||x>bb.right||y<bb.top||y>bb.bottom)return;
+      const beforeOrders=Number(scene.ordersServed||0),beforeIndex=Number(scene.orderIndex||0);
       scene.g3ServeNativePointerCount=(scene.g3ServeNativePointerCount||0)+1;
-      scene.g3ServeNativeLast={x:Math.round(x),y:Math.round(y),orderIndex:scene.orderIndex||0};
-      scene.serve();
+      scene.g3ServeNativeLast={x:Math.round(x),y:Math.round(y),orderIndex:beforeIndex};
+      window.setTimeout(()=>{
+        if(!scene.sys?.isActive?.()||scene.roundComplete)return;
+        if(Number(scene.ordersServed||0)!==beforeOrders||Number(scene.orderIndex||0)!==beforeIndex||scene.interactionLocked)return;
+        if(!ready(scene))return;
+        scene.g3ServeNativeFallbackCount=(scene.g3ServeNativeFallbackCount||0)+1;
+        scene.serve();
+      },0);
     };
 
     scene.events.on('postupdate',sync);scene.game?.events?.on?.('poststep',sync);canvas?.addEventListener('pointerup',nativePointerUp,true);sync();
     const priorDebug=scene.debugState?.bind(scene);
     if(priorDebug&&!scene.__g3ServeDebugWrapped){
       scene.__g3ServeDebugWrapped=true;
-      scene.debugState=function(){return {...priorDebug(),serveReadyInvariant:ready(scene),serveInputEnabled:!!scene.serveButton?.input?.enabled,serveReadyRepairCount:scene.g3ServeReadyRepairCount||0,serveReadyBlockedDisableCount:scene.g3ServeReadyBlockedDisableCount||0,serveReadyBlockedRemoveCount:scene.g3ServeReadyBlockedRemoveCount||0,serveNativePointerCount:scene.g3ServeNativePointerCount||0,serveNativeLast:scene.g3ServeNativeLast||null};};
+      scene.debugState=function(){return {...priorDebug(),serveReadyInvariant:ready(scene),serveInputEnabled:!!scene.serveButton?.input?.enabled,serveReadyRepairCount:scene.g3ServeReadyRepairCount||0,serveReadyBlockedDisableCount:scene.g3ServeReadyBlockedDisableCount||0,serveReadyBlockedRemoveCount:scene.g3ServeReadyBlockedRemoveCount||0,serveNativePointerCount:scene.g3ServeNativePointerCount||0,serveNativeFallbackCount:scene.g3ServeNativeFallbackCount||0,serveNativeLast:scene.g3ServeNativeLast||null};};
     }
     const cleanup=()=>{scene.game?.events?.off?.('poststep',sync);canvas?.removeEventListener('pointerup',nativePointerUp,true);scene.__g3ServeReadyGuard=false;};
     scene.events.once('shutdown',cleanup);scene.events.once('destroy',cleanup);
   }
   const priorCreate=CraftRound.prototype.create;
   CraftRound.prototype.create=function(){priorCreate.call(this);this.time?.delayedCall?.(20,()=>attach(this));};
-  window.__ADUGAME_G3_COMMERCIAL_ART_V2_SERVE_GUARD__={loaded:true,version:'2.36',readyOrderInputInvariant:true,nativeCanvasServeFallback:true,usesLiveButtonBounds:true,usesRealServeMethod:true,blockedForeignDisable:true,blockedForeignRemove:true,realServeDisableAllowed:true,generatedVisualAssets:0};
+  window.__ADUGAME_G3_COMMERCIAL_ART_V2_SERVE_GUARD__={loaded:true,version:'2.37',readyOrderInputInvariant:true,nativeCanvasServeFallback:true,nativeFallbackAfterPhaserDispatch:true,usesLiveButtonBounds:true,usesRealServeMethod:true,blockedForeignDisable:true,blockedForeignRemove:true,realServeDisableAllowed:true,generatedVisualAssets:0};
 })();
