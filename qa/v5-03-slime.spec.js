@@ -37,12 +37,17 @@ async function serve(page,r,decoX,served){
   // Playwright's mouseup can resolve one frame before Phaser dispatches dragend.
   // Wait for the actual requested decoration to enter live game state before submitting.
   await waitFor(page,()=>{const s=window.__ADUGAME_SCENE__(),d=window.__ADUGAME_DEBUG__();return !!s?.order?.deco&&d.chosen.decos.includes(s.order.deco);},5000);
-  const button=await page.evaluate(()=>{const b=window.__ADUGAME_SCENE__().serveButton,r=b.getBounds();return {x:r.centerX,y:r.centerY,w:r.width,h:r.height,input:!!b.input?.enabled,visible:b.visible!==false};});
-  expect(button.visible).toBe(true);expect(button.input).toBe(true);expect(button.w).toBeGreaterThan(90);expect(button.h).toBeGreaterThan(40);
-  // A zero-duration synthetic click can put pointerdown/pointerup in the same render frame.
-  // Press the center of the live rendered hit target for a short human-like tap instead.
-  await pressL(page,r,button.x,button.y,90);
-  await waitFor(page,n=>window.__ADUGAME_DEBUG__().ordersServed>=n,9000,served);
+  await waitFor(page,()=>{const s=window.__ADUGAME_SCENE__();return !!s&&!s.interactionLocked&&!!s.serveButton?.input?.enabled&&s.serveButton.visible!==false;},5000);
+  // Use the same verified serving path as the dedicated G3 authored-art gate:
+  // press the live rendered bounds center, verify state movement, and retry once only
+  // if the browser loses a synthetic pointerup between render frames.
+  for(let attempt=0;attempt<2;attempt++){
+    const button=await page.evaluate(()=>{const s=window.__ADUGAME_SCENE__(),b=s.serveButton,bb=b.getBounds();return {x:bb.centerX,y:bb.centerY,w:bb.width,h:bb.height,input:!!b.input?.enabled,visible:b.visible!==false,locked:!!s.interactionLocked};});
+    expect(button.visible).toBe(true);expect(button.input).toBe(true);expect(button.locked).toBe(false);expect(button.w).toBeGreaterThan(90);expect(button.h).toBeGreaterThan(40);
+    await pressL(page,r,button.x,button.y,110);
+    try{await waitFor(page,n=>window.__ADUGAME_DEBUG__().ordersServed>=n,5000,served);return;}
+    catch(e){if(attempt===1)throw e;await page.waitForTimeout(180);}
+  }
 }
 
 test('v5 slime second customer fully rearms ingredients, mixer, consumable economy and serving',async({page})=>{
