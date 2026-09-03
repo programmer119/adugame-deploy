@@ -39,13 +39,15 @@
     Object.assign(badge.style,{position:'absolute',left:'50%',top:'11.4%',transform:'translate(-50%,0)',zIndex:'23',pointerEvents:'none',padding:'8px 15px',borderRadius:'999px',background:'rgba(235,255,244,.97)',border:'2px solid rgba(41,171,126,.38)',boxShadow:'0 8px 20px rgba(28,105,76,.15)',fontSize:'14px',fontWeight:'1000',color:'#155f48',opacity:'0',whiteSpace:'nowrap'});
     root.appendChild(badge);
 
+    const MILESTONE_HOLD_MS=1250;
+    const DONE_HOLD_MS=1800;
     let lastStep=Number(scene.step)||0,lastQ=(scene.mouthProgress||[]).filter(v=>v>=115).length,lastClip=scene.clipped?.size||0,lastFaceBucket=Math.floor(Math.min(100,(scene.faceWash||0)/360*100)/25),badgeToken=0,pulseCount=0,railSig='';
     const reduced=()=>!!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
     const pulse=(text,kind)=>{
       pulseCount+=1;root.dataset.gameFeelPulseCount=String(pulseCount);root.dataset.gameFeelLastPulse=kind;root.dataset.gameFeelLastText=text;
       const token=++badgeToken;badge.textContent=text;badge.dataset.on='1';badge.style.opacity='1';
       if(reduced())badge.style.transform='translate(-50%,0)';
-      setTimeout(()=>{if(!badge.isConnected||token!==badgeToken)return;badge.dataset.on='0';badge.style.opacity='0';},kind==='done'?1800:760);
+      setTimeout(()=>{if(!badge.isConnected||token!==badgeToken)return;badge.dataset.on='0';badge.style.opacity='0';},kind==='done'?DONE_HOLD_MS:MILESTONE_HOLD_MS);
     };
     const segmented=(count,done)=>{
       track.replaceChildren();
@@ -81,7 +83,7 @@
       root.dataset.gameFeelReady='1';root.dataset.version='17.31';
       if(window.__ADUGAME_ART_SOURCE__?.G1R2){
         window.__ADUGAME_ART_SOURCE__.G1R2.version='v17.31';
-        window.__ADUGAME_ART_SOURCE__.G1R2.dynamicGameFeel={stableVisualProgress:true,milestoneSuccessBadge:true,mobileCompact:true,reducedMotionAware:true,progressDomUpdatesOnChangeOnly:true,generatedVisualAssets:0};
+        window.__ADUGAME_ART_SOURCE__.G1R2.dynamicGameFeel={stableVisualProgress:true,milestoneSuccessBadge:true,mobileCompact:true,reducedMotionAware:true,progressDomUpdatesOnChangeOnly:true,milestoneHoldMs:MILESTONE_HOLD_MS,doneHoldMs:DONE_HOLD_MS,generatedVisualAssets:0};
         window.__ADUGAME_ART_SOURCE__.G1R2.generatedVisualAssets=0;
       }
       if(window.__ADUGAME_G1_BENCHMARK_ART_V17__)window.__ADUGAME_G1_BENCHMARK_ART_V17__.version='17.31';
