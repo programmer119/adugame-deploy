@@ -1,4 +1,4 @@
-// ADUGAME G1R1 input reliability guard v1.1.
+// ADUGAME G1R1 input reliability guard v1.2.
 // Keeps the visible faucet and its logical hit area coupled after late visual restyles.
 (() => {
   if(typeof G1R1!=='function')return;
@@ -37,23 +37,35 @@
       scene.__g1r1FaucetLastFallback=source;scene.tapFaucet();
     };
     const phaserFallback=p=>{if(hit(p.x,p.y))trigger('phaser');};
-    const domFallback=e=>{
+    const clientFallback=(e,source)=>{
       if(!canvas||![1,4].includes(scene.step)||scene.roundComplete)return;
       const r=canvas.getBoundingClientRect();if(!r.width||!r.height)return;
+      if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)return;
       const x=(e.clientX-r.left)/r.width*1280,y=(e.clientY-r.top)/r.height*720;
       scene.__g1r1FaucetDomPointerCount=(scene.__g1r1FaucetDomPointerCount||0)+1;
-      if(hit(x,y))trigger('dom');
+      if(hit(x,y))trigger(source);
     };
-    scene.events.on('postupdate',rearm);scene.input.on('pointerup',phaserFallback);canvas?.addEventListener('pointerup',domFallback,true);rearm();
+    const canvasFallback=e=>clientFallback(e,'canvas-dom');
+    const windowFallback=e=>clientFallback(e,'window-capture');
+    scene.events.on('postupdate',rearm);
+    scene.input.on('pointerup',phaserFallback);
+    canvas?.addEventListener('pointerup',canvasFallback,true);
+    window.addEventListener('pointerup',windowFallback,true);
+    rearm();
     const priorDebug=scene.debugState?.bind(scene);
     if(priorDebug&&!scene.__g1r1InputDebugWrapped){
       scene.__g1r1InputDebugWrapped=true;
       scene.debugState=function(){return {...priorDebug(),g1r1InputGuard:{ready:true,faucetEnabled:!!scene.faucet?.input?.enabled,faucetPendingStep:scene.__g1r1FaucetPendingStep??null,faucetAcceptedCount:scene.__g1r1FaucetAcceptedCount||0,faucetFallbackCount:scene.__g1r1FaucetFallbackCount||0,faucetDomPointerCount:scene.__g1r1FaucetDomPointerCount||0,faucetLastFallback:scene.__g1r1FaucetLastFallback||'',faucetRearmCount:scene.__g1r1FaucetRearmCount||0}};};
     }
-    const cleanup=()=>{scene.input.off('pointerup',phaserFallback);canvas?.removeEventListener('pointerup',domFallback,true);scene.__g1r1FaucetInputGuard=false;};
+    const cleanup=()=>{
+      scene.input.off('pointerup',phaserFallback);
+      canvas?.removeEventListener('pointerup',canvasFallback,true);
+      window.removeEventListener('pointerup',windowFallback,true);
+      scene.__g1r1FaucetInputGuard=false;
+    };
     scene.events.once('shutdown',cleanup);scene.events.once('destroy',cleanup);
   }
   const priorCreate=G1R1.prototype.create;
   G1R1.prototype.create=function(){priorCreate.call(this);this.time?.delayedCall?.(240,()=>attach(this));};
-  window.__ADUGAME_G1R1_INPUT_GUARD__={loaded:true,version:'1.1',faucetLiveRearm:true,phaserPointerFallback:true,nativeCanvasPointerFallback:true,reentryGuard:true};
+  window.__ADUGAME_G1R1_INPUT_GUARD__={loaded:true,version:'1.2',faucetLiveRearm:true,phaserPointerFallback:true,nativeCanvasPointerFallback:true,windowCapturePointerFallback:true,reentryGuard:true};
 })();
