@@ -1,0 +1,31 @@
+name: G3 fast authored visual
+
+on:
+  push:
+    branches: [benchmark-v5]
+  workflow_dispatch:
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install test dependencies
+        run: npm install --no-audit --no-fund
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: G3 commercial-art syntax gate
+        run: node --check g3-commercial-art-v1.js && node --check g3-commercial-art-v1-align.js && node --check qa/g3-commercial-art.spec.js
+      - name: Capture G3 authored scene
+        run: npx playwright test --config=playwright.g3-fast.config.js
+      - name: Upload G3 visual
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g3-fast-authored-visual
+          path: qa/reports/g3-commercial/
+          if-no-files-found: error
