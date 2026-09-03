@@ -15,7 +15,9 @@ async function serveLive(page,r){
 }
 
 test('G3 authored commercial art stays aligned and visually clean through the full two-customer round',async({page})=>{
-  test.setTimeout(120000);
+  // Eight authored-art screenshots are intentionally captured in one cold-load browser session.
+  // Keep all per-action waits strict; only the total evidence-capture budget is widened.
+  test.setTimeout(210000);
   await page.goto('/index.html?game=3&round=1&e2e=1',{waitUntil:'domcontentloaded'});
   await waitDebug(page,()=>window.__ADUGAME_DEBUG__?.()?.benchmarkV5==='persistent-slime-store',null,30000);
   await waitDebug(page,()=>{const r=document.getElementById('g3-commercial-art-v1');return r&&r.dataset.ready==='1'&&r.dataset.hitAlignment==='1'&&r.dataset.v2HeroReady==='1'&&r.dataset.version==='2.2';},null,30000);
