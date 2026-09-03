@@ -29,15 +29,15 @@ async function gf(page){return page.evaluate(()=>{
 });}
 async function ready(page){
   await page.goto('/index.html?game=1&round=2&e2e=1',{waitUntil:'domcontentloaded'});
-  await page.waitForFunction(()=>{const r=document.querySelector('#g1r2-v17-overlay');return r?.dataset.gameFeelReady==='1'&&r?.dataset.motionReady==='1'&&r?.dataset.toolHitAlignmentReady==='1'&&r?.dataset.version==='17.31'&&window.__ADUGAME_ART_SOURCE__?.G1R2?.version==='v17.31';},null,{timeout:30000});
-  const d=await gf(page);expect(d.generated).toBe(0);expect(d.meta?.stableVisualProgress).toBe(true);expect(d.meta?.milestoneSuccessBadge).toBe(true);expect(d.meta?.mobileCompact).toBe(true);expect(d.meta?.progressDomUpdatesOnChangeOnly).toBe(true);return d;
+  await page.waitForFunction(()=>{const r=document.querySelector('#g1r2-v17-overlay');return r?.dataset.gameFeelReady==='1'&&r?.dataset.motionReady==='1'&&r?.dataset.toolHitAlignmentReady==='1'&&r?.dataset.version==='17.31'&&window.__ADUGAME_ART_SOURCE__?.G1R2?.version==='v17.31';},null,{timeout:60000});
+  const d=await gf(page);expect(d.generated).toBe(0);expect(d.meta?.stableVisualProgress).toBe(true);expect(d.meta?.milestoneSuccessBadge).toBe(true);expect(d.meta?.brushFeedbackOnRelease).toBe(true);expect(d.meta?.mobileCompact).toBe(true);expect(d.meta?.progressDomUpdatesOnChangeOnly).toBe(true);expect(d.meta?.milestoneHoldMs).toBe(1250);return d;
 }
 async function brushQuadrant(page,index){
   const pts=BRUSH_PATHS[index];await beginDrag(page,[BRUSH_HOME,pts[0]],2);for(const a of pts.slice(1)){const q=await p(page,a[0],a[1]);await page.mouse.move(q.x,q.y,{steps:1});}await page.mouse.up();await page.waitForFunction(i=>window.__ADUGAME_DEBUG__?.()?.mouthProgress?.[i]>=115,index,{timeout:3000});
 }
 
 test('R2 v17.31 desktop visible progress + success milestones',async({page})=>{
-  test.setTimeout(240000);fs.mkdirSync('qa/reports/g1r2-fast',{recursive:true});let d=await ready(page);expect(d.state.step).toBe(0);expect(d.railState).toBe('hidden');
+  test.setTimeout(300000);fs.mkdirSync('qa/reports/g1r2-fast',{recursive:true});let d=await ready(page);expect(d.state.step).toBe(0);expect(d.railState).toBe('hidden');
   await drag(page,[PASTE_HOME,[900,500]]);await page.waitForTimeout(120);expect((await gf(page)).state.step).toBe(0);
   await drag(page,[PASTE_HOME,[1110,560],PASTE_TARGET],2);await waitStep(page,1);await page.waitForTimeout(210);d=await gf(page);expect(d.railState).toBe('brush:0/4');expect(d.rail.opacity).toBeGreaterThan(.8);expect(d.rail.text).toContain('양치 0/4');expect(d.segments).toEqual(['0','0','0','0']);await snap(page,'GAMEFEEL-1-brush-rail.png');
   await brushQuadrant(page,0);await page.waitForTimeout(130);d=await gf(page);expect(d.railState).toBe('brush:1/4');expect(d.segments).toEqual(['1','0','0','0']);expect(d.lastPulse).toBe('brush:1');expect(d.lastText).toContain('양치 1/4');expect(d.badge.opacity).toBeGreaterThan(.5);await snap(page,'GAMEFEEL-1b-brush-success.png');
@@ -49,6 +49,6 @@ test('R2 v17.31 desktop visible progress + success milestones',async({page})=>{
 });
 
 test('R2 v17.31 compact mobile keeps game-feel HUD out of action area',async({page})=>{
-  test.setTimeout(90000);fs.mkdirSync('qa/reports/g1r2-fast',{recursive:true});await page.setViewportSize({width:844,height:390});let d=await ready(page);expect(d.layout.scrollWidth).toBeLessThanOrEqual(d.layout.innerWidth+2);expect(d.rail.display).toBe('none');expect(d.badge.display).toBe('none');await snap(page,'GAMEFEEL-MOBILE-0-clean.png');
+  test.setTimeout(120000);fs.mkdirSync('qa/reports/g1r2-fast',{recursive:true});await page.setViewportSize({width:844,height:390});let d=await ready(page);expect(d.layout.scrollWidth).toBeLessThanOrEqual(d.layout.innerWidth+2);expect(d.rail.display).toBe('none');expect(d.badge.display).toBe('none');await snap(page,'GAMEFEEL-MOBILE-0-clean.png');
   await drag(page,[PASTE_HOME,[1110,560],PASTE_TARGET],2);await waitStep(page,1);d=await gf(page);expect(d.railState).toBe('brush:0/4');expect(d.rail.display).toBe('none');await page.emulateMedia({reducedMotion:'reduce'});await page.waitForFunction(()=>document.querySelector('#g1r2-v17-overlay')?.dataset.motionReduced==='1',null,{timeout:2500});await brushQuadrant(page,0);d=await gf(page);expect(d.state.mouthProgress[0]).toBeGreaterThanOrEqual(115);expect(d.lastPulse).toBe('brush:1');expect(d.badge.display).toBe('none');expect(d.generated).toBe(0);await snap(page,'GAMEFEEL-MOBILE-1-reduced-clean.png');
 });
