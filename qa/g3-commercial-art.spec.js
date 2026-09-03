@@ -9,8 +9,13 @@ function circle(cx,cy,rr,turns=3.2,steps=4){const pts=[];for(let i=0;i<=turns*st
 async function shot(page,name){await page.screenshot({path:path.join(OUT,name),fullPage:true});}
 async function waitDebug(page,fn,arg,timeout=12000){return page.waitForFunction(fn,arg,{timeout});}
 async function center(page,sel){return page.locator(sel).evaluate(e=>{const r=e.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2,w:r.width,h:r.height};});}
+async function serveLive(page,r){
+  const b=await page.evaluate(()=>{const o=window.__ADUGAME_SCENE__().serveButton,bb=o.getBounds();return{x:bb.centerX,y:bb.centerY,w:bb.width,h:bb.height,input:!!o.input?.enabled,visible:o.visible!==false};});
+  expect(b.visible).toBe(true);expect(b.input).toBe(true);expect(b.w).toBeGreaterThan(90);expect(b.h).toBeGreaterThan(40);await pressL(page,r,b.x,b.y,100);
+}
 
-test('G3 authored commercial art stays aligned and visually clean through first customer and shop reveal',async({page})=>{
+test('G3 authored commercial art stays aligned and visually clean through the full two-customer round',async({page})=>{
+  test.setTimeout(120000);
   await page.goto('/index.html?game=3&round=1&e2e=1',{waitUntil:'domcontentloaded'});
   await waitDebug(page,()=>window.__ADUGAME_DEBUG__?.()?.benchmarkV5==='persistent-slime-store',null,30000);
   await waitDebug(page,()=>{const r=document.getElementById('g3-commercial-art-v1');return r&&r.dataset.ready==='1'&&r.dataset.hitAlignment==='1'&&r.dataset.v2HeroReady==='1'&&r.dataset.version==='2.2';},null,30000);
@@ -23,38 +28,54 @@ test('G3 authored commercial art stays aligned and visually clean through first 
   expect(parseFloat(await page.locator('.g3-focus').evaluate(e=>getComputedStyle(e).borderWidth))).toBeLessThanOrEqual(3);
   expect(parseFloat(await page.locator('.g3-supply-soccer').evaluate(e=>getComputedStyle(e).opacity))).toBeLessThan(.05);
 
-  // Controls stay on the actual Phaser hit targets even when the unaffordable shop is visually withheld.
+  // Visible controls stay exactly on the Phaser hit targets.
   for(const [sel,x,y] of [['.g3-color-blue',210,355],['.g3-color-green',325,355],['.g3-color-pink',440,355],['.g3-supply-soccer',596,188]]){
     const c=await center(page,sel),p=map(r,x,y);expect(Math.abs(c.x-p.x)).toBeLessThan(12);expect(Math.abs(c.y-p.y)).toBeLessThan(12);
   }
   await shot(page,'G3-0-start.png');
 
+  // Customer 1: blue + star.
   await dragL(page,r,[[230,230],[650,420]],280);await waitDebug(page,()=>window.__ADUGAME_DEBUG__().ingredients.includes('base'));
   await dragL(page,r,[[360,230],[650,420]],280);await waitDebug(page,()=>window.__ADUGAME_DEBUG__().ingredients.includes('activator'));
   await page.waitForTimeout(520);await shot(page,'G3-1-ingredients.png');
-
   await clickL(page,r,210,355,80);await waitDebug(page,()=>window.__ADUGAME_DEBUG__().chosen.color==='blue');
   await dragL(page,r,circle(650,420,88),1900);await waitDebug(page,()=>window.__ADUGAME_DEBUG__().mixed===true,null,10000);
   await page.waitForTimeout(220);expect(await page.locator('.g3-slime').evaluate(e=>getComputedStyle(e).opacity)).toBe('1');expect(await page.locator('#g3-commercial-art-v1').getAttribute('data-slime-color')).toBe('blue');
   await shot(page,'G3-2-mixed.png');
-
   await dragL(page,r,[[210,485],[650,420]],300);await waitDebug(page,()=>window.__ADUGAME_DEBUG__().chosen.decos.includes('star'));
   await waitDebug(page,()=>document.getElementById('g3-commercial-art-v1')?.dataset.orderReady==='true');
   await shot(page,'G3-3-ready.png');
-
-  const serve=await page.evaluate(()=>{const b=window.__ADUGAME_SCENE__().serveButton,bb=b.getBounds();return{x:bb.centerX,y:bb.centerY,w:bb.width,h:bb.height,input:!!b.input?.enabled,visible:b.visible!==false};});
-  expect(serve.visible).toBe(true);expect(serve.input).toBe(true);expect(serve.w).toBeGreaterThan(90);expect(serve.h).toBeGreaterThan(40);await pressL(page,r,serve.x,serve.y,100);
-  await waitDebug(page,()=>{const d=window.__ADUGAME_DEBUG__();return d.ordersServed===1&&d.orderIndex===1;},null,12000);
+  await serveLive(page,r);
+  await waitDebug(page,()=>{const d=window.__ADUGAME_DEBUG__();return d.ordersServed===1&&d.orderIndex===1&&d.ingredients.length===0&&!d.mixed;},null,12000);
   await page.waitForTimeout(420);
   expect(await page.locator('.g3-v22-sold').textContent()).toContain('1/2');
   expect(await page.locator('#g3-commercial-art-v1').getAttribute('data-legacy-jar-visible')).toBe('0');
   expect(parseFloat(await page.locator('.g3-supply-soccer').evaluate(e=>getComputedStyle(e).opacity))).toBeGreaterThan(.9);
   await shot(page,'G3-4-next-customer.png');
 
-  // The first sale earns 3 coins; now the consumable supply shop becomes visually available.
+  // First sale earns 3 coins; buy finite soccer-decoration stock and verify the shop presentation.
   await clickL(page,r,596,188,90);await waitDebug(page,()=>window.__ADUGAME_DEBUG__().supplyStock.soccer===2);
   await shot(page,'G3-5-shop-stock.png');
+
+  // Customer 2: pink + heart. Complete the real round, not just the shop reveal.
+  await dragL(page,r,[[230,230],[650,420]],280);await waitDebug(page,()=>window.__ADUGAME_DEBUG__().ingredients.includes('base'));
+  await dragL(page,r,[[360,230],[650,420]],280);await waitDebug(page,()=>window.__ADUGAME_DEBUG__().ingredients.includes('activator'));
+  await clickL(page,r,440,355,80);await waitDebug(page,()=>window.__ADUGAME_DEBUG__().chosen.color==='pink');
+  await dragL(page,r,circle(650,420,88),1900);await waitDebug(page,()=>window.__ADUGAME_DEBUG__().mixed===true,null,10000);
+  await dragL(page,r,[[400,485],[650,420]],300);await waitDebug(page,()=>window.__ADUGAME_DEBUG__().chosen.decos.includes('heart'));
+  await waitDebug(page,()=>document.getElementById('g3-commercial-art-v1')?.dataset.orderReady==='true');
+  expect(await page.locator('#g3-commercial-art-v1').getAttribute('data-slime-color')).toBe('pink');
+  await shot(page,'G3-6-second-ready.png');
+
+  await serveLive(page,r);
+  await waitDebug(page,()=>{const d=window.__ADUGAME_DEBUG__();return d.roundComplete===true&&d.ordersServed===2;},null,12000);
+  await page.waitForTimeout(420);
+  expect(await page.locator('.g3-v22-sold').textContent()).toContain('2/2');
+  expect(await page.locator('#g3-commercial-art-v1').getAttribute('data-legacy-jar-visible')).toBe('0');
+  await shot(page,'G3-7-complete.png');
+
   const end=await page.evaluate(()=>({debug:window.__ADUGAME_DEBUG__(),root:{...document.getElementById('g3-commercial-art-v1').dataset},art:window.__ADUGAME_ART_SOURCE__?.G3}));
-  expect(end.debug.coinBalance).toBe(1);expect(end.debug.supplyStock.soccer).toBe(2);expect(end.root.generatedVisualAssets).toBe('0');expect(end.root.finishedDisplay).toBe('completion-badge');expect(end.art.generatedVisualAssets).toBe(0);
+  expect(end.debug.roundComplete).toBe(true);expect(end.debug.ordersServed).toBe(2);expect(end.debug.shelfCount).toBe(2);expect(end.debug.coinEarned).toBe(6);expect(end.debug.coinBalance).toBe(4);expect(end.debug.supplyStock.soccer).toBe(2);
+  expect(end.root.generatedVisualAssets).toBe('0');expect(end.root.finishedDisplay).toBe('completion-badge');expect(end.root.legacyJarVisible).toBe('0');expect(end.art.generatedVisualAssets).toBe(0);
   fs.writeFileSync(path.join(OUT,'G3-debug.json'),JSON.stringify(end,null,2));
 });
