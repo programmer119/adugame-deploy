@@ -6,7 +6,7 @@
   function attach(scene){
     if(scene.scene?.key!=='G1R2'||scene.__g1v1732GameFeel)return;
     const root=document.getElementById('g1r2-v17-overlay');
-    if(!root){window.setTimeout(()=>attach(scene),80);return;}
+    if(!root||root.dataset.motionReady!=='1'){window.setTimeout(()=>attach(scene),80);return;}
     scene.__g1v1732GameFeel=true;
 
     const style=document.createElement('style');
