@@ -1,9 +1,11 @@
-// ADUGAME G1R2 late-layer clock resilience guard v1.0.
-// Mirrors only the three authored UX initialization delays. Phaser Clock and browser
-// timer race through one single-fire callback; gameplay validation/state is untouched.
+// ADUGAME G1R2 late-layer clock resilience guard v1.1.
+// Mirrors only the three authored UX initialization delays. Phaser Clock keeps normal
+// ownership; the browser timer is a late watchdog that fires only if that Clock stalls.
+// Gameplay validation/state is untouched.
 (() => {
   if (typeof G1R2 !== 'function') return;
   const MIRRORED_DELAYS = new Set([1380, 1460, 1580]);
+  const WATCHDOG_MS = 6000;
   const priorCreate = G1R2.prototype.create;
 
   G1R2.prototype.create = function (...args) {
@@ -28,7 +30,8 @@
       };
 
       const event = rawDelayedCall.call(clock, delay, once, callbackArgs, callbackScope);
-      browserTimer = window.setTimeout(() => once(), Number(delay) + 180);
+      // Do not race normal Phaser initialization. This exists only as a dead-clock watchdog.
+      browserTimer = window.setTimeout(() => once(), WATCHDOG_MS);
       const clear = () => {
         if (browserTimer !== null) window.clearTimeout(browserTimer);
         browserTimer = null;
@@ -47,9 +50,11 @@
 
   window.__ADUGAME_G1R2_LATE_LAYER_GUARD__ = {
     loaded: true,
-    version: '1.0',
+    version: '1.1',
     mirroredDelays: [...MIRRORED_DELAYS],
+    watchdogMs: WATCHDOG_MS,
     singleFire: true,
+    normalClockPriority: true,
     generatedVisualAssets: 0
   };
 })();
