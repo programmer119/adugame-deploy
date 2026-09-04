@@ -1,7 +1,10 @@
-// ADUGAME G1R1 input reliability guard v1.2.
+// ADUGAME G1R1 input reliability guard v1.3.
 // Keeps the visible faucet and its logical hit area coupled after late visual restyles.
+// Also restores the canonical soap start used by the guided command chain so the hint,
+// visible prop and live drag target all point to the same valid action.
 (() => {
   if(typeof G1R1!=='function')return;
+  const SOAP_HOME={x:175,y:430};
   const priorTap=G1R1.prototype.tapFaucet;
   G1R1.prototype.tapFaucet=function(...args){
     const accepted=[1,4].includes(this.step);
@@ -19,6 +22,17 @@
     if(scene.__g1r1FaucetInputGuard||scene.scene?.key!=='G1R1')return;
     scene.__g1r1FaucetInputGuard=true;
     const canvas=scene.game?.canvas;
+
+    // g1-benchmark-art-v8 historically moved the soap container to a decorative coordinate.
+    // The strict guide and the original playable action both use 175,430. Restore that one
+    // canonical coordinate after all early art passes, including the v8 interaction ellipse.
+    if(scene.soap){
+      scene.soap.setPosition(SOAP_HOME.x,SOAP_HOME.y);
+      scene.soap.home={...SOAP_HOME};
+      scene.soapInputTarget?.setPosition?.(SOAP_HOME.x,SOAP_HOME.y+3);
+      scene.__g1r1SoapCanonicalAlignCount=(scene.__g1r1SoapCanonicalAlignCount||0)+1;
+    }
+
     const rearm=()=>{
       const f=scene.faucet;if(!f||scene.roundComplete)return;
       if(!f.input?.enabled){
@@ -55,7 +69,7 @@
     const priorDebug=scene.debugState?.bind(scene);
     if(priorDebug&&!scene.__g1r1InputDebugWrapped){
       scene.__g1r1InputDebugWrapped=true;
-      scene.debugState=function(){return {...priorDebug(),g1r1InputGuard:{ready:true,faucetEnabled:!!scene.faucet?.input?.enabled,faucetPendingStep:scene.__g1r1FaucetPendingStep??null,faucetAcceptedCount:scene.__g1r1FaucetAcceptedCount||0,faucetFallbackCount:scene.__g1r1FaucetFallbackCount||0,faucetDomPointerCount:scene.__g1r1FaucetDomPointerCount||0,faucetLastFallback:scene.__g1r1FaucetLastFallback||'',faucetRearmCount:scene.__g1r1FaucetRearmCount||0}};};
+      scene.debugState=function(){return {...priorDebug(),g1r1InputGuard:{ready:true,faucetEnabled:!!scene.faucet?.input?.enabled,faucetPendingStep:scene.__g1r1FaucetPendingStep??null,faucetAcceptedCount:scene.__g1r1FaucetAcceptedCount||0,faucetFallbackCount:scene.__g1r1FaucetFallbackCount||0,faucetDomPointerCount:scene.__g1r1FaucetDomPointerCount||0,faucetLastFallback:scene.__g1r1FaucetLastFallback||'',faucetRearmCount:scene.__g1r1FaucetRearmCount||0,soapCanonicalAlignCount:scene.__g1r1SoapCanonicalAlignCount||0,soapX:scene.soap?.x??null,soapY:scene.soap?.y??null}};};
     }
     const cleanup=()=>{
       scene.input.off('pointerup',phaserFallback);
@@ -67,5 +81,5 @@
   }
   const priorCreate=G1R1.prototype.create;
   G1R1.prototype.create=function(){priorCreate.call(this);this.time?.delayedCall?.(240,()=>attach(this));};
-  window.__ADUGAME_G1R1_INPUT_GUARD__={loaded:true,version:'1.2',faucetLiveRearm:true,phaserPointerFallback:true,nativeCanvasPointerFallback:true,windowCapturePointerFallback:true,reentryGuard:true};
+  window.__ADUGAME_G1R1_INPUT_GUARD__={loaded:true,version:'1.3',faucetLiveRearm:true,soapCanonicalGuideAlign:true,phaserPointerFallback:true,nativeCanvasPointerFallback:true,windowCapturePointerFallback:true,reentryGuard:true};
 })();
