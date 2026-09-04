@@ -6,9 +6,12 @@ async function waitFor(p,fn,timeout=8000,arg=null){return p.waitForFunction(fn,a
 async function open(p,g,r){await p.goto(`/index.html?game=${g}&round=${r}&e2e=1`,{waitUntil:'networkidle'});await waitFor(p,()=>window.__ADUGAME_DEBUG__?.()?.key);return p.locator('canvas').boundingBox();}
 async function guide(p){return p.evaluate(()=>{const s=window.__ADUGAME_SCENE__();return{status:String(s.status?.text||s.missionText?.text||''),hint:s.hintTarget?{x:s.hintTarget.x,y:s.hintTarget.y}:null};});}
 async function expectGuide(p,text,x,y,tol=3){const g=await guide(p);expect(g.status).toContain(text);expect(g.hint,`missing hint for ${g.status}`).toBeTruthy();expect(Math.abs(g.hint.x-x),JSON.stringify(g)).toBeLessThanOrEqual(tol);expect(Math.abs(g.hint.y-y),JSON.stringify(g)).toBeLessThanOrEqual(tol);}
+async function objectPoint(p,name){return p.evaluate(n=>{const s=window.__ADUGAME_SCENE__(),o=s?.[n];return o&&{x:o.x,y:o.y};},name);}
+async function expectGuideObject(p,text,name,tol=3){const q=await objectPoint(p,name);expect(q,`missing ${name}`).toBeTruthy();await expectGuide(p,text,q.x,q.y,tol);return q;}
+async function waitG1R2Final(p){await waitFor(p,()=>{const r=document.getElementById('g1r2-v17-overlay');return r?.dataset.ready==='1'&&r?.dataset.uxReady==='1'&&r?.dataset.uxAlignmentReady==='1'&&r?.dataset.finalAlertReady==='1'&&r?.dataset.gameFeelReady==='1'&&r?.dataset.version==='17.32'&&window.__ADUGAME_ART_SOURCE__?.G1R2?.version==='v17.32';},15000);}
 
 test('strict command chain: G1 every guided state points to the next valid action',async({page})=>{
-  test.setTimeout(150000);
+  test.setTimeout(180000);
   let r=await open(page,1,1);await expectGuide(page,'변기',740,380);
   await clickL(page,r,740,380);await waitFor(page,()=>window.__ADUGAME_DEBUG__().step===.5);await expectGuide(page,'물',790,275);
   await clickL(page,r,790,275);await waitFor(page,()=>String(window.__ADUGAME_SCENE__().status.text).includes('수도꼭지'));await expectGuide(page,'수도꼭지',400,300);
@@ -16,10 +19,27 @@ test('strict command chain: G1 every guided state points to the next valid actio
   await dragL(page,r,[[270,395],[400,475]]);await waitFor(page,()=>window.__ADUGAME_DEBUG__().step===3);await expectGuide(page,'문질러',400,475);
   await dragL(page,r,[[330,475],[410,475],[330,475],[410,475],[330,475],[410,475],[330,475]],650);await waitFor(page,()=>window.__ADUGAME_DEBUG__().step===4);await expectGuide(page,'헹궈',400,300);
 
-  r=await open(page,1,2);await expectGuide(page,'치약',205,235);
-  await dragL(page,r,[[205,235],[205,350]]);await waitFor(page,()=>window.__ADUGAME_DEBUG__().step===1);await expectGuide(page,'칫솔',205,350);
-  await dragL(page,r,[[205,350],[730,340],[770,340],[730,340],[770,340],[810,340],[850,340],[810,340],[850,340],[770,390],[730,390],[770,390],[730,390],[810,390],[850,390],[810,390],[850,390]],1300);await waitFor(page,()=>window.__ADUGAME_DEBUG__().step===2);await expectGuide(page,'세안천',205,480);
-  await dragL(page,r,[[205,480],[720,320],[790,320],[720,320],[790,320],[720,320],[790,320],[720,320]],800);await waitFor(page,()=>window.__ADUGAME_DEBUG__().step===3);await expectGuide(page,'손톱',205,545);
+  r=await open(page,1,2);await waitG1R2Final(page);await page.waitForTimeout(100);
+  const paste=await expectGuideObject(page,'치약','paste');
+  const pasteTarget=await objectPoint(page,'brush');expect(pasteTarget,'missing brush paste target').toBeTruthy();
+  await dragL(page,r,[[paste.x,paste.y],[pasteTarget.x,pasteTarget.y]],360);await waitFor(page,()=>window.__ADUGAME_DEBUG__().step===1);await page.waitForTimeout(120);
+  await expectGuideObject(page,'칫솔','brush');
+  const brushPaths=[
+    [[765,485],[800,485],[755,500],[800,500],[755,485],[800,485],[755,500]],
+    [[850,485],[895,485],[845,500],[895,500],[845,485],[895,485],[845,500]],
+    [[765,535],[800,535],[755,555],[800,555],[755,535],[800,535],[755,555]],
+    [[850,535],[895,535],[845,555],[895,555],[845,535],[895,535],[845,555]]
+  ];
+  for(let i=0;i<brushPaths.length;i++){
+    const b=await objectPoint(page,'brush');expect(b,'missing brush').toBeTruthy();
+    await dragL(page,r,[[b.x,b.y],...brushPaths[i]],620);
+    if(i<3)await waitFor(page,n=>(window.__ADUGAME_SCENE__().mouthProgress?.[n]||0)>=115,8000,i);
+  }
+  await waitFor(page,()=>window.__ADUGAME_DEBUG__().step===2);await page.waitForTimeout(120);await expectGuideObject(page,'세안천','cloth');
+  const cloth=await objectPoint(page,'cloth');expect(cloth,'missing cloth').toBeTruthy();
+  const faceLoop=[[790,330],[735,330],[845,330],[735,345],[845,345],[735,315],[845,315],[790,330]];
+  const facePts=[[cloth.x,cloth.y]];for(let i=0;i<4;i++)facePts.push(...faceLoop);
+  await dragL(page,r,facePts,1500);await waitFor(page,()=>window.__ADUGAME_DEBUG__().step===3);await page.waitForTimeout(120);await expectGuideObject(page,'손톱','clipper');
 
   r=await open(page,1,3);await expectGuide(page,'장난감',190,270);
   const toys=[[190,270],[305,270],[420,270]];
