@@ -1,4 +1,4 @@
-// ADUGAME G1R1 input reliability guard v1.5.
+// ADUGAME G1R1 input reliability guard v1.6.
 // Keeps the visible faucet and its logical hit area coupled after late visual restyles.
 // The authored v8 soap position remains the canonical live target; strict guidance QA tracks it.
 (() => {
@@ -14,6 +14,28 @@
       this.time?.delayedCall?.(hold+100,()=>{if(this.__g1r1FaucetPendingStep===step)this.__g1r1FaucetPendingStep=null;});
     }
     return priorTap.apply(this,args);
+  };
+
+  // flushToilet already owns the canonical transition to step 1. Keep the matching
+  // instruction/hint synchronized even when a late visual layer or a stalled Phaser
+  // delayed callback leaves the visible progress and scene.status temporarily divergent.
+  const priorFlush=G1R1.prototype.flushToilet;
+  if(typeof priorFlush==='function')G1R1.prototype.flushToilet=function(...args){
+    const before=this.step;
+    const result=priorFlush.apply(this,args);
+    if(before===.5&&this.step===1){
+      const sync=()=>{
+        if(this.scene?.key!=='G1R1'||this.roundComplete||this.step!==1)return;
+        this.status?.setText?.('이제 수도꼭지를 눌러 손을 먼저 적셔요');
+        this.hintTarget={x:this.faucet?.x??400,y:this.faucet?.y??300};
+        this.v5SetStep?.(2);
+        this.__g1r1PostFlushGuidanceSyncCount=(this.__g1r1PostFlushGuidanceSyncCount||0)+1;
+      };
+      sync();
+      this.time?.delayedCall?.(520,sync);
+      window.setTimeout(sync,620);
+    }
+    return result;
   };
 
   function attach(scene){
@@ -58,7 +80,7 @@
     const priorDebug=scene.debugState?.bind(scene);
     if(priorDebug&&!scene.__g1r1InputDebugWrapped){
       scene.__g1r1InputDebugWrapped=true;
-      scene.debugState=function(){return {...priorDebug(),g1r1InputGuard:{ready:true,faucetEnabled:!!scene.faucet?.input?.enabled,faucetPendingStep:scene.__g1r1FaucetPendingStep??null,faucetAcceptedCount:scene.__g1r1FaucetAcceptedCount||0,faucetFallbackCount:scene.__g1r1FaucetFallbackCount||0,faucetDomPointerCount:scene.__g1r1FaucetDomPointerCount||0,faucetLastFallback:scene.__g1r1FaucetLastFallback||'',faucetRearmCount:scene.__g1r1FaucetRearmCount||0,soapX:scene.soap?.x??null,soapY:scene.soap?.y??null}};};
+      scene.debugState=function(){return {...priorDebug(),g1r1InputGuard:{ready:true,faucetEnabled:!!scene.faucet?.input?.enabled,faucetPendingStep:scene.__g1r1FaucetPendingStep??null,faucetAcceptedCount:scene.__g1r1FaucetAcceptedCount||0,faucetFallbackCount:scene.__g1r1FaucetFallbackCount||0,faucetDomPointerCount:scene.__g1r1FaucetDomPointerCount||0,faucetLastFallback:scene.__g1r1FaucetLastFallback||'',faucetRearmCount:scene.__g1r1FaucetRearmCount||0,postFlushGuidanceSyncCount:scene.__g1r1PostFlushGuidanceSyncCount||0,soapX:scene.soap?.x??null,soapY:scene.soap?.y??null}};};
     }
     const cleanup=()=>{
       scene.input.off('pointerup',phaserFallback);
@@ -71,5 +93,5 @@
   }
   const priorCreate=G1R1.prototype.create;
   G1R1.prototype.create=function(){priorCreate.call(this);this.time?.delayedCall?.(240,()=>attach(this));};
-  window.__ADUGAME_G1R1_INPUT_GUARD__={loaded:true,version:'1.5',faucetLiveRearm:true,authoredSoapTargetPreserved:true,phaserPointerFallback:true,nativeCanvasPointerFallback:true,windowCapturePointerFallback:true,windowMouseCaptureFallback:true,reentryGuard:true};
+  window.__ADUGAME_G1R1_INPUT_GUARD__={loaded:true,version:'1.6',faucetLiveRearm:true,authoredSoapTargetPreserved:true,phaserPointerFallback:true,nativeCanvasPointerFallback:true,windowCapturePointerFallback:true,windowMouseCaptureFallback:true,reentryGuard:true,postFlushGuidanceCanonicalSync:true};
 })();
