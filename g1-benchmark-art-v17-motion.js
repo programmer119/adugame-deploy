@@ -11,7 +11,7 @@
   function attach(scene){
     if(scene.scene?.key!=='G1R2'||scene.__g1v1730Motion)return;
     const root=document.getElementById('g1r2-v17-overlay');
-    if(!root){window.setTimeout(()=>attach(scene),80);return;}
+    if(!root||root.dataset.toolHitAlignmentReady!=='1'){window.setTimeout(()=>attach(scene),80);return;}
     scene.__g1v1730Motion=true;
     const focus=[...root.querySelectorAll('div')].find(d=>d.style.borderWidth==='5px'&&d.style.position==='absolute'&&d.style.transform.includes('translate'));
     const dropTarget=root.querySelector('.g1v17-paste-drop-target');
