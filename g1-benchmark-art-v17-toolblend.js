@@ -23,8 +23,13 @@
     root.appendChild(wash);
 
     const setHome=(o,p)=>{if(!o)return;o.setPosition(p.x,p.y);o.home={x:p.x,y:p.y};};
-    // Step 0 starts directly from the authored tube/brush pair.
-    setHome(scene.paste,PASTE_HOME);setHome(scene.brush,BRUSH_PASTE_TARGET);setHome(scene.cloth,CLOTH_HOME);
+    const finalHitAlignmentReady=()=>root.dataset.toolHitAlignmentReady==='1';
+    // Legacy authored-prop coordinates are only an early fallback. Once the final v17.29+
+    // hit alignment is mounted, never overwrite its live mechanic coordinates even if this
+    // older layer attaches late after a stalled Phaser Clock.
+    if(!finalHitAlignmentReady()){
+      setHome(scene.paste,PASTE_HOME);setHome(scene.brush,BRUSH_PASTE_TARGET);setHome(scene.cloth,CLOTH_HOME);
+    }
 
     const sync=()=>{
       if(!root.isConnected||scene.scene?.key!=='G1R2')return;
@@ -34,14 +39,16 @@
       if(brushImg)brushImg.style.display='none';
       if(clothImg)clothImg.style.display='none';
 
-      if(st===0){
-        if(scene.paste&&scene.paste.home?.x!==PASTE_HOME.x)setHome(scene.paste,PASTE_HOME);
-        if(scene.brush&&scene.brush.home?.x!==BRUSH_PASTE_TARGET.x)setHome(scene.brush,BRUSH_PASTE_TARGET);
-      }else if(st===1){
-        // After toothpaste is accepted, move the invisible brush hit target onto the green brush already in the authored scene.
-        if(scene.brush&&scene.brush.home?.x!==BRUSH_HOME.x)setHome(scene.brush,BRUSH_HOME);
-      }else if(st===2){
-        if(scene.cloth&&scene.cloth.home?.x!==CLOTH_HOME.x)setHome(scene.cloth,CLOTH_HOME);
+      // Final v17.29+ coordinates own the mechanic as soon as they report ready.
+      if(!finalHitAlignmentReady()){
+        if(st===0){
+          if(scene.paste&&scene.paste.home?.x!==PASTE_HOME.x)setHome(scene.paste,PASTE_HOME);
+          if(scene.brush&&scene.brush.home?.x!==BRUSH_PASTE_TARGET.x)setHome(scene.brush,BRUSH_PASTE_TARGET);
+        }else if(st===1){
+          if(scene.brush&&scene.brush.home?.x!==BRUSH_HOME.x)setHome(scene.brush,BRUSH_HOME);
+        }else if(st===2){
+          if(scene.cloth&&scene.cloth.home?.x!==CLOTH_HOME.x)setHome(scene.cloth,CLOTH_HOME);
+        }
       }
 
       const washing=st===2&&scene.lastCloth!=null;
@@ -50,13 +57,13 @@
     };
     scene.events.on('postupdate',sync);sync();
 
-    root.dataset.version='17.15';
+    if(!finalHitAlignmentReady())root.dataset.version='17.15';
     if(window.__ADUGAME_ART_SOURCE__?.G1R2){
-      window.__ADUGAME_ART_SOURCE__.G1R2.version='v17.15';
-      window.__ADUGAME_ART_SOURCE__.G1R2.toolIntegration={paste:'authored scene tube',brush:'authored scene toothbrush',facewash:'authored scene sponge + CSS wash feedback'};
+      if(!finalHitAlignmentReady())window.__ADUGAME_ART_SOURCE__.G1R2.version='v17.15';
+      window.__ADUGAME_ART_SOURCE__.G1R2.toolIntegration={paste:'authored scene tube',brush:'authored scene toothbrush',facewash:'authored scene sponge + CSS wash feedback',respectsFinalHitAlignment:true};
       window.__ADUGAME_ART_SOURCE__.G1R2.generatedVisualAssets=0;
     }
-    if(window.__ADUGAME_G1_BENCHMARK_ART_V17__)window.__ADUGAME_G1_BENCHMARK_ART_V17__.version='17.15';
+    if(window.__ADUGAME_G1_BENCHMARK_ART_V17__&&!finalHitAlignmentReady())window.__ADUGAME_G1_BENCHMARK_ART_V17__.version='17.15';
     const cleanup=()=>{wash.remove();scene.__g1v1715ToolBlend=false;};
     scene.events.once('shutdown',cleanup);scene.events.once('destroy',cleanup);
   }
