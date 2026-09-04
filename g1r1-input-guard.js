@@ -1,4 +1,4 @@
-// ADUGAME G1R1 input reliability guard v1.7.
+// ADUGAME G1R1 input reliability guard v1.8.
 // Keeps the visible faucet and its logical hit area coupled after late visual restyles.
 // The authored v8 soap position remains the canonical live target; strict guidance QA tracks it.
 (() => {
@@ -88,6 +88,32 @@
     if(scene.__g1r1FaucetInputGuard||scene.scene?.key!=='G1R1')return;
     scene.__g1r1FaucetInputGuard=true;
     const canvas=scene.game?.canvas;
+
+    // The v8 art pass intentionally hides prototype chrome. Hidden controls must not
+    // retain live hit areas. Disable those legacy Text inputs rather than teaching QA
+    // to ignore real hidden-interactive defects.
+    scene.children.list.filter(o=>o?.type==='Text'&&o.visible===false&&o.input?.enabled).forEach(o=>o.disableInteractive());
+    scene.__g1r1HiddenPrototypeInputsDisabled=true;
+
+    // v8.1 drew a visible flush button into the toilet art but left the old Text at
+    // alpha .001 as its click target. Replace that transparent target with one visible,
+    // authored button while keeping flushToilet as the sole validation/state owner.
+    const legacyFlush=scene.flush;
+    scene.children.list.filter(o=>o?.name==='g1r1_flush_live').forEach(o=>o.destroy());
+    if(legacyFlush){legacyFlush.disableInteractive?.();legacyFlush.setVisible?.(false);}
+    const fx=legacyFlush?.x??790,fy=legacyFlush?.y??275;
+    const flushLive=scene.add.container(fx,fy).setDepth(12.4).setName('g1r1_flush_live');
+    const flushArt=scene.add.graphics();
+    flushArt.fillStyle(0xffd76a,1).fillRoundedRect(-26,-19,52,38,12);
+    flushArt.lineStyle(4,0x4b7890,.3).strokeRoundedRect(-26,-19,52,38,12);
+    flushArt.fillStyle(0xffffff,.88).fillCircle(0,0,7);
+    flushLive.add(flushArt);
+    flushLive.setSize(60,46).setInteractive(new Phaser.Geom.Rectangle(-30,-23,60,46),Phaser.Geom.Rectangle.Contains);
+    flushLive.on('pointerup',()=>scene.flushToilet());
+    flushLive.semanticLabel='물내림';flushLive.visualIdentity='illustrated-target';flushLive.licensedArt=false;
+    scene.flushInputTarget=flushLive;
+    scene.__g1r1VisibleFlushTarget=true;
+
     const rearm=()=>{
       const f=scene.faucet;if(!f||scene.roundComplete)return;
       if(!f.input?.enabled){
@@ -126,7 +152,7 @@
     const priorDebug=scene.debugState?.bind(scene);
     if(priorDebug&&!scene.__g1r1InputDebugWrapped){
       scene.__g1r1InputDebugWrapped=true;
-      scene.debugState=function(){return {...priorDebug(),g1r1InputGuard:{ready:true,faucetEnabled:!!scene.faucet?.input?.enabled,faucetPendingStep:scene.__g1r1FaucetPendingStep??null,faucetAcceptedCount:scene.__g1r1FaucetAcceptedCount||0,faucetFallbackCount:scene.__g1r1FaucetFallbackCount||0,faucetDomPointerCount:scene.__g1r1FaucetDomPointerCount||0,faucetGlobalPointerCount:scene.__g1r1FaucetGlobalPointerCount||0,faucetCanonicalWatchdogCount:scene.__g1r1FaucetCanonicalWatchdogCount||0,faucetLastFallback:scene.__g1r1FaucetLastFallback||'',faucetRearmCount:scene.__g1r1FaucetRearmCount||0,postFlushGuidanceSyncCount:scene.__g1r1PostFlushGuidanceSyncCount||0,soapX:scene.soap?.x??null,soapY:scene.soap?.y??null}};};
+      scene.debugState=function(){return {...priorDebug(),g1r1InputGuard:{ready:true,faucetEnabled:!!scene.faucet?.input?.enabled,faucetPendingStep:scene.__g1r1FaucetPendingStep??null,faucetAcceptedCount:scene.__g1r1FaucetAcceptedCount||0,faucetFallbackCount:scene.__g1r1FaucetFallbackCount||0,faucetDomPointerCount:scene.__g1r1FaucetDomPointerCount||0,faucetGlobalPointerCount:scene.__g1r1FaucetGlobalPointerCount||0,faucetCanonicalWatchdogCount:scene.__g1r1FaucetCanonicalWatchdogCount||0,faucetLastFallback:scene.__g1r1FaucetLastFallback||'',faucetRearmCount:scene.__g1r1FaucetRearmCount||0,postFlushGuidanceSyncCount:scene.__g1r1PostFlushGuidanceSyncCount||0,hiddenPrototypeInputsDisabled:!!scene.__g1r1HiddenPrototypeInputsDisabled,visibleFlushTarget:!!scene.__g1r1VisibleFlushTarget,soapX:scene.soap?.x??null,soapY:scene.soap?.y??null}};};
     }
     const cleanup=()=>{
       scene.input.off('pointerup',phaserFallback);
@@ -139,5 +165,5 @@
   }
   const priorCreate=G1R1.prototype.create;
   G1R1.prototype.create=function(){priorCreate.call(this);this.time?.delayedCall?.(240,()=>attach(this));};
-  window.__ADUGAME_G1R1_INPUT_GUARD__={loaded:true,version:'1.7',faucetLiveRearm:true,authoredSoapTargetPreserved:true,phaserPointerFallback:true,nativeCanvasPointerFallback:true,windowCapturePointerFallback:true,windowMouseCaptureFallback:true,globalPointerDownCaptureFallback:true,globalMouseDownCaptureFallback:true,canonicalDelayedCallbackWatchdog:true,reentryGuard:true,postFlushGuidanceCanonicalSync:true,generatedVisualAssets:0};
+  window.__ADUGAME_G1R1_INPUT_GUARD__={loaded:true,version:'1.8',faucetLiveRearm:true,authoredSoapTargetPreserved:true,visibleFlushTarget:true,hiddenPrototypeInputsDisabled:true,phaserPointerFallback:true,nativeCanvasPointerFallback:true,windowCapturePointerFallback:true,windowMouseCaptureFallback:true,globalPointerDownCaptureFallback:true,globalMouseDownCaptureFallback:true,canonicalDelayedCallbackWatchdog:true,reentryGuard:true,postFlushGuidanceCanonicalSync:true,generatedVisualAssets:0};
 })();
