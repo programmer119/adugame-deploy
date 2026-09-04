@@ -3,6 +3,7 @@ const { test, expect } = require('@playwright/test');
 async function rect(page){ return page.locator('canvas').boundingBox(); }
 function map(r,x,y){ return {x:r.x + x/1280*r.width, y:r.y + y/720*r.height}; }
 async function clickL(page,r,x,y){ const p=map(r,x,y); await page.mouse.click(p.x,p.y); }
+async function livePoint(page,key){ return page.evaluate(k=>{const s=window.__ADUGAME_SCENE__?.(),o=s?.[k];return o?{x:o.x,y:o.y}:null;},key); }
 async function dragL(page,r,points,duration=240){
   const ps=points.map(([x,y])=>map(r,x,y));
   await page.mouse.move(ps[0].x,ps[0].y); await page.mouse.down();
@@ -48,12 +49,19 @@ async function craftOrder(p,r,{colorX,decoX,containerX=null,extraX=null},served)
 
 const cases=[
   [1,1,async(p,r)=>{
-    await clickL(p,r,740,380); await waitFor(p,()=>window.__ADUGAME_DEBUG__()?.step===0.5,4000);
-    await clickL(p,r,790,275); await waitFor(p,()=>window.__ADUGAME_DEBUG__()?.step===1,4000);
-    await clickL(p,r,400,300); await waitFor(p,()=>window.__ADUGAME_DEBUG__()?.step===2,4000);
-    await dragL(p,r,[[175,430],[400,475]],180); await waitFor(p,()=>window.__ADUGAME_DEBUG__()?.step===3,4000);
-    await dragL(p,r,[[330,475],[410,475],[330,475],[410,475],[330,475],[410,475],[330,475]],620); await waitFor(p,()=>window.__ADUGAME_DEBUG__()?.step===4,4000);
-    await clickL(p,r,400,300); await waitFor(p,()=>window.__ADUGAME_DEBUG__()?.roundComplete===true,4000);
+    const toilet=await livePoint(p,'toilet');expect(toilet).toBeTruthy();
+    await clickL(p,r,toilet.x,toilet.y); await waitFor(p,()=>window.__ADUGAME_DEBUG__()?.step===0.5,8000);
+    const flush=await livePoint(p,'flush');expect(flush).toBeTruthy();
+    await clickL(p,r,flush.x,flush.y); await waitFor(p,()=>window.__ADUGAME_DEBUG__()?.step===1,8000);
+    const faucet=await livePoint(p,'faucet');expect(faucet).toBeTruthy();
+    await clickL(p,r,faucet.x,faucet.y); await waitFor(p,()=>window.__ADUGAME_DEBUG__()?.step===2,8000);
+    const soap=await livePoint(p,'soap'),hands=await livePoint(p,'hands');expect(soap).toBeTruthy();expect(hands).toBeTruthy();
+    await dragL(p,r,[[soap.x,soap.y],[hands.x,hands.y]],220); await p.waitForTimeout(260); await waitFor(p,()=>window.__ADUGAME_DEBUG__()?.step===3,8000);
+    const h=await livePoint(p,'hands');expect(h).toBeTruthy();
+    await dragL(p,r,[[h.x-70,h.y],[h.x,h.y],[h.x+70,h.y],[h.x,h.y],[h.x-70,h.y],[h.x,h.y],[h.x+70,h.y],[h.x,h.y],[h.x-70,h.y]],760);
+    await waitFor(p,()=>window.__ADUGAME_DEBUG__()?.step===4,8000);
+    const rinse=await livePoint(p,'faucet');expect(rinse).toBeTruthy();
+    await clickL(p,r,rinse.x,rinse.y); await waitFor(p,()=>window.__ADUGAME_DEBUG__()?.roundComplete===true,8000);
   }],
   [1,2,async(p,r)=>{
     await dragL(p,r,[[205,235],[205,350]],160); await p.waitForTimeout(220);
