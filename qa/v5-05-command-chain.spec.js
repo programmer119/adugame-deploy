@@ -12,8 +12,8 @@ test('strict command chain: G1 every guided state points to the next valid actio
   let r=await open(page,1,1);await expectGuide(page,'변기',740,380);
   await clickL(page,r,740,380);await waitFor(page,()=>window.__ADUGAME_DEBUG__().step===.5);await expectGuide(page,'물',790,275);
   await clickL(page,r,790,275);await waitFor(page,()=>String(window.__ADUGAME_SCENE__().status.text).includes('수도꼭지'));await expectGuide(page,'수도꼭지',400,300);
-  await clickL(page,r,400,300);await waitFor(page,()=>window.__ADUGAME_DEBUG__().step===2);await expectGuide(page,'비누',175,430);
-  await dragL(page,r,[[175,430],[400,475]]);await waitFor(page,()=>window.__ADUGAME_DEBUG__().step===3);await expectGuide(page,'문질러',400,475);
+  await clickL(page,r,400,300);await waitFor(page,()=>window.__ADUGAME_DEBUG__().step===2);await expectGuide(page,'비누',270,395);
+  await dragL(page,r,[[270,395],[400,475]]);await waitFor(page,()=>window.__ADUGAME_DEBUG__().step===3);await expectGuide(page,'문질러',400,475);
   await dragL(page,r,[[330,475],[410,475],[330,475],[410,475],[330,475],[410,475],[330,475]],650);await waitFor(page,()=>window.__ADUGAME_DEBUG__().step===4);await expectGuide(page,'헹궈',400,300);
 
   r=await open(page,1,2);await expectGuide(page,'치약',205,235);
