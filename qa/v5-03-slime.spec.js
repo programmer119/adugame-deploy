@@ -51,6 +51,10 @@ async function serve(page,r,decoX,served){
 }
 
 test('v5 slime second customer fully rearms ingredients, mixer, consumable economy and serving',async({page})=>{
+  // Two complete real-input customer cycles intentionally include long drag/mix gestures,
+  // post-serve reaction delays, stock purchase/use, and the second full mix. Keep every
+  // interaction/assertion intact; only give this exhaustive chain enough wall-clock budget.
+  test.setTimeout(180000);
   await page.goto('/index.html?game=3&round=1&e2e=1',{waitUntil:'networkidle'});
   await waitFor(page,()=>window.__ADUGAME_DEBUG__?.()?.benchmarkV5==='persistent-slime-store');
   const r=await page.locator('canvas').boundingBox();expect(r).toBeTruthy();
