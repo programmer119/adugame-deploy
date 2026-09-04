@@ -74,9 +74,17 @@
 
   const oldDrop=CraftRound.prototype.dropDeco;
   CraftRound.prototype.dropDeco=function(o){
-    const result=oldDrop.call(this,o);
-    this.time.delayedCall(520,()=>syncGuidance(this));
-    return result;
+    // The legacy snap callback writes a generic SERVE instruction after the decoration
+    // lands. Decorate that exact callback and restore strict order-aware guidance
+    // immediately after the legacy write, rather than racing it with a fixed timeout.
+    const originalSnap=this.snap;
+    this.snap=(obj,x,y,cb,...rest)=>originalSnap.call(this,obj,x,y,(...args)=>{
+      const r=cb?.(...args);
+      syncGuidance(this);
+      this.time.delayedCall(320,()=>syncGuidance(this));
+      return r;
+    },...rest);
+    try{return oldDrop.call(this,o);}finally{this.snap=originalSnap;}
   };
 
   const oldServe=CraftRound.prototype.serve;
@@ -87,5 +95,5 @@
     return result;
   };
 
-  window.__ADUGAME_CLARITY_G3_STABLE_V5__={loaded:true,version:'5.2.13',stableConditionChain:true,ingredientSnapCallbackGuard:true,wrongContainerGuard:true,wrongColorGuard:true,failedServeRecovery:true};
+  window.__ADUGAME_CLARITY_G3_STABLE_V5__={loaded:true,version:'5.2.14',stableConditionChain:true,ingredientSnapCallbackGuard:true,decoSnapCallbackGuard:true,wrongContainerGuard:true,wrongColorGuard:true,failedServeRecovery:true};
 })();
