@@ -26,11 +26,11 @@
       for(const o of this.items||[]){
         const icon=DISTINCT[o.kind];if(!icon)continue;
         const pic=o.list?.filter(x=>x?.type==='Text').find(x=>Number(x.y)<0);
-        if(pic){pic.setText(icon).setFontSize(glyphCount(icon)>2?'18px':'21px');}
+        if(pic){pic.setText(icon).setFontSize(glyphCount(icon)>1?'15px':'21px');}
         o.pictogram=icon;o.visualIdentity='pictogram';
       }
     };
   }
   if(typeof G2R1!=='undefined')[G2R1,G2R2,G2R3].forEach(patch);
-  window.__ADUGAME_CLARITY_ICONS_V5__={loaded:true,version:'5.2.3',uniquePortableKinds:true,remapped:Object.keys(DISTINCT).length};
+  window.__ADUGAME_CLARITY_ICONS_V5__={loaded:true,version:'5.2.4',uniquePortableKinds:true,remapped:Object.keys(DISTINCT).length};
 })();
