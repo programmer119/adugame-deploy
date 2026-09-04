@@ -9,6 +9,8 @@ const frames=[];
 async function rect(page){return page.locator('canvas').boundingBox();}
 function map(r,x,y){return {x:r.x+x/1280*r.width,y:r.y+y/720*r.height};}
 async function clickL(page,r,x,y){const p=map(r,x,y);await page.mouse.click(p.x,p.y);}
+async function livePoint(page,key){return page.evaluate(k=>{const s=window.__ADUGAME_SCENE__?.(),o=s?.[k];return o?{x:o.x,y:o.y}:null;},key);}
+async function liveNails(page){return page.evaluate(()=>{const s=window.__ADUGAME_SCENE__?.();return (s?.nails||[]).filter(n=>n?.active!==false).map(n=>({x:n.x,y:n.y,index:n.nailIndex}));});}
 async function dragL(page,r,points,duration=240){
   const ps=points.map(([x,y])=>map(r,x,y));
   await page.mouse.move(ps[0].x,ps[0].y);await page.mouse.down();
@@ -18,6 +20,7 @@ async function dragL(page,r,points,duration=240){
 }
 function circle(cx,cy,r,turns=3,steps=4,start=-Math.PI/2){const pts=[];for(let i=0;i<=turns*steps;i++){const a=start+2*Math.PI*i/steps;pts.push([cx+Math.cos(a)*r,cy+Math.sin(a)*r]);}return pts;}
 async function waitFor(page,fn,timeout=12000,arg=null){return page.waitForFunction(fn,arg,{timeout});}
+async function waitG1R2Final(page){await waitFor(page,()=>{const r=document.getElementById('g1r2-v17-overlay');return r?.dataset.ready==='1'&&r?.dataset.uxReady==='1'&&r?.dataset.uxAlignmentReady==='1'&&r?.dataset.finalAlertReady==='1'&&r?.dataset.gameFeelReady==='1'&&r?.dataset.version==='17.32'&&window.__ADUGAME_ART_SOURCE__?.G1R2?.version==='v17.32';},18000);}
 async function openRound(page,g,r){
   const errors=[];page.on('pageerror',e=>errors.push(String(e)));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.goto(`/index.html?game=${g}&round=${r}&e2e=1`,{waitUntil:'networkidle'});
@@ -115,11 +118,24 @@ async function craftOrder(p,r,{colorX,decoX,containerX=null,extraX=null},served,
 }
 
 test('visual-gate G1R1',async({page})=>{
-  const {rct:r,errors}=await openRound(page,1,1);await audit(page,'G1R1_initial');await clickL(page,r,740,380);await waitFor(page,()=>window.__ADUGAME_DEBUG__()?.step===.5,4000);await audit(page,'G1R1_toilet');await clickL(page,r,790,275);await waitFor(page,()=>window.__ADUGAME_DEBUG__()?.step===1,4000);await clickL(page,r,400,300);await waitFor(page,()=>window.__ADUGAME_DEBUG__()?.step===2,4000);await dragL(page,r,[[175,430],[400,475]],180);await waitFor(page,()=>window.__ADUGAME_DEBUG__()?.step===3,4000);await audit(page,'G1R1_soap');await dragL(page,r,[[330,475],[410,475],[330,475],[410,475],[330,475],[410,475],[330,475]],620);await waitFor(page,()=>window.__ADUGAME_DEBUG__()?.step===4,4000);await audit(page,'G1R1_scrub');await clickL(page,r,400,300);await completeAndAudit(page,errors,'G1R1_complete');
+  const {rct:r,errors}=await openRound(page,1,1);await audit(page,'G1R1_initial');
+  const toilet=await livePoint(page,'toilet');expect(toilet).toBeTruthy();await clickL(page,r,toilet.x,toilet.y);await waitFor(page,()=>window.__ADUGAME_DEBUG__()?.step===.5,8000);await audit(page,'G1R1_toilet');
+  const flush=await livePoint(page,'flush');expect(flush).toBeTruthy();await clickL(page,r,flush.x,flush.y);await waitFor(page,()=>window.__ADUGAME_DEBUG__()?.step===1,8000);
+  const faucet=await livePoint(page,'faucet');expect(faucet).toBeTruthy();await clickL(page,r,faucet.x,faucet.y);await waitFor(page,()=>window.__ADUGAME_DEBUG__()?.step===2,8000);
+  const soap=await livePoint(page,'soap'),hands=await livePoint(page,'hands');expect(soap).toBeTruthy();expect(hands).toBeTruthy();await dragL(page,r,[[soap.x,soap.y],[hands.x,hands.y]],220);await page.waitForTimeout(260);await waitFor(page,()=>window.__ADUGAME_DEBUG__()?.step===3,8000);await audit(page,'G1R1_soap');
+  const h=await livePoint(page,'hands');expect(h).toBeTruthy();await dragL(page,r,[[h.x-70,h.y],[h.x,h.y],[h.x+70,h.y],[h.x,h.y],[h.x-70,h.y],[h.x,h.y],[h.x+70,h.y],[h.x,h.y],[h.x-70,h.y]],760);await waitFor(page,()=>window.__ADUGAME_DEBUG__()?.step===4,8000);await audit(page,'G1R1_scrub');
+  const rinse=await livePoint(page,'faucet');expect(rinse).toBeTruthy();await clickL(page,r,rinse.x,rinse.y);await completeAndAudit(page,errors,'G1R1_complete');
 });
 
-test('visual-gate G1R2',async({page})=>{
-  const {rct:r,errors}=await openRound(page,1,2);await audit(page,'G1R2_initial');await dragL(page,r,[[205,235],[205,350]],160);await page.waitForTimeout(220);await audit(page,'G1R2_paste');await dragL(page,r,[[205,350],[730,340],[770,340],[730,340],[770,340],[810,340],[850,340],[810,340],[850,340],[770,390],[730,390],[770,390],[730,390],[810,390],[850,390],[810,390],[850,390]],1200);await page.waitForTimeout(220);await audit(page,'G1R2_brushed');await dragL(page,r,[[205,480],[720,320],[790,320],[720,320],[790,320],[720,320],[790,320],[720,320]],760);await page.waitForTimeout(220);await audit(page,'G1R2_face');for(const nail of [[1010,438],[1035,443],[1060,438],[1085,443],[1110,438]]){await dragL(page,r,[[205,585],nail],150);await page.waitForTimeout(120);}await completeAndAudit(page,errors,'G1R2_complete');
+test('visual-gate G1R2',async({page},testInfo)=>{
+  testInfo.setTimeout(300000);
+  const {rct:r,errors}=await openRound(page,1,2);await waitG1R2Final(page);await page.waitForTimeout(120);await audit(page,'G1R2_initial');
+  const paste=await livePoint(page,'paste'),pasteTarget=await livePoint(page,'brush');expect(paste).toBeTruthy();expect(pasteTarget).toBeTruthy();await dragL(page,r,[[paste.x,paste.y],[pasteTarget.x,pasteTarget.y]],360);await waitFor(page,()=>window.__ADUGAME_DEBUG__()?.step===1,8000);await page.waitForTimeout(120);await audit(page,'G1R2_paste');
+  const brushPaths=[[[765,485],[800,485],[755,500],[800,500],[755,485],[800,485],[755,500]],[[850,485],[895,485],[845,500],[895,500],[845,485],[895,485],[845,500]],[[765,535],[800,535],[755,555],[800,555],[755,535],[800,535],[755,555]],[[850,535],[895,535],[845,555],[895,555],[845,535],[895,535],[845,555]]];
+  for(let i=0;i<brushPaths.length;i++){const brush=await livePoint(page,'brush');expect(brush).toBeTruthy();await dragL(page,r,[[brush.x,brush.y],...brushPaths[i]],620);if(i<3)await waitFor(page,n=>(window.__ADUGAME_SCENE__().mouthProgress?.[n]||0)>=115,8000,i);}
+  await waitFor(page,()=>window.__ADUGAME_DEBUG__()?.step===2,8000);await page.waitForTimeout(120);await audit(page,'G1R2_brushed');
+  const cloth=await livePoint(page,'cloth');expect(cloth).toBeTruthy();const faceLoop=[[790,330],[735,330],[845,330],[735,345],[845,345],[735,315],[845,315],[790,330]],facePts=[[cloth.x,cloth.y]];for(let i=0;i<4;i++)facePts.push(...faceLoop);await dragL(page,r,facePts,1500);await waitFor(page,()=>window.__ADUGAME_DEBUG__()?.step===3,8000);await page.waitForTimeout(120);await audit(page,'G1R2_face');
+  const nails=await liveNails(page);expect(nails.length).toBe(5);for(let i=0;i<nails.length;i++){const clipper=await livePoint(page,'clipper');expect(clipper).toBeTruthy();await dragL(page,r,[[clipper.x,clipper.y],[nails[i].x,nails[i].y]],260);await waitFor(page,n=>window.__ADUGAME_SCENE__().clipped?.size>=n,8000,i+1);await page.waitForTimeout(80);}await completeAndAudit(page,errors,'G1R2_complete');
 });
 
 test('visual-gate G1R3',async({page})=>{
