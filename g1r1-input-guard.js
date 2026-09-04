@@ -1,4 +1,4 @@
-// ADUGAME G1R1 input reliability guard v1.4.
+// ADUGAME G1R1 input reliability guard v1.5.
 // Keeps the visible faucet and its logical hit area coupled after late visual restyles.
 // The authored v8 soap position remains the canonical live target; strict guidance QA tracks it.
 (() => {
@@ -48,10 +48,12 @@
     };
     const canvasFallback=e=>clientFallback(e,'canvas-dom');
     const windowFallback=e=>clientFallback(e,'window-capture');
+    const mouseFallback=e=>clientFallback(e,'window-mouse-capture');
     scene.events.on('postupdate',rearm);
     scene.input.on('pointerup',phaserFallback);
     canvas?.addEventListener('pointerup',canvasFallback,true);
     window.addEventListener('pointerup',windowFallback,true);
+    window.addEventListener('mouseup',mouseFallback,true);
     rearm();
     const priorDebug=scene.debugState?.bind(scene);
     if(priorDebug&&!scene.__g1r1InputDebugWrapped){
@@ -62,11 +64,12 @@
       scene.input.off('pointerup',phaserFallback);
       canvas?.removeEventListener('pointerup',canvasFallback,true);
       window.removeEventListener('pointerup',windowFallback,true);
+      window.removeEventListener('mouseup',mouseFallback,true);
       scene.__g1r1FaucetInputGuard=false;
     };
     scene.events.once('shutdown',cleanup);scene.events.once('destroy',cleanup);
   }
   const priorCreate=G1R1.prototype.create;
   G1R1.prototype.create=function(){priorCreate.call(this);this.time?.delayedCall?.(240,()=>attach(this));};
-  window.__ADUGAME_G1R1_INPUT_GUARD__={loaded:true,version:'1.4',faucetLiveRearm:true,authoredSoapTargetPreserved:true,phaserPointerFallback:true,nativeCanvasPointerFallback:true,windowCapturePointerFallback:true,reentryGuard:true};
+  window.__ADUGAME_G1R1_INPUT_GUARD__={loaded:true,version:'1.5',faucetLiveRearm:true,authoredSoapTargetPreserved:true,phaserPointerFallback:true,nativeCanvasPointerFallback:true,windowCapturePointerFallback:true,windowMouseCaptureFallback:true,reentryGuard:true};
 })();
