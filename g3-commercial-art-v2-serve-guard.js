@@ -1,4 +1,4 @@
-// ADUGAME G3 commercial-art v2.37 — visible serve-button reliability invariant.
+// ADUGAME G3 commercial-art v2.38 — visible serve-button reliability invariant.
 // A valid unlocked order must submit when the user releases on the visible serve button,
 // even if a legacy Phaser wrapper replaces/disables its internal InteractiveObject.
 (() => {
@@ -7,8 +7,21 @@
 
   const priorServe=CraftRound.prototype.serve;
   CraftRound.prototype.serve=function(...args){
-    this.__g3ServeDisableAllowed=true;
-    try{return priorServe.apply(this,args);}finally{this.__g3ServeDisableAllowed=false;}
+    // Never let the canonical serve() disable its InteractiveObject while Phaser is still
+    // dispatching the same pointerup. Queue exactly one canonical call for the next macrotask.
+    // This preserves the real game method/state transitions while avoiding the stuck Clock/lock
+    // observed when disableInteractive() runs inside the live pointer dispatch stack.
+    if(this.__g3ServePending)return;
+    this.__g3ServePending=true;
+    const scene=this;
+    const run=()=>{
+      scene.__g3ServePending=false;
+      if(!scene.sys?.isActive?.()||scene.roundComplete)return;
+      scene.__g3ServeDisableAllowed=true;
+      try{return priorServe.apply(scene,args);}finally{scene.__g3ServeDisableAllowed=false;}
+    };
+    if(typeof window!=='undefined'&&typeof window.setTimeout==='function'){window.setTimeout(run,0);return;}
+    return run();
   };
 
   function attach(scene){
@@ -51,11 +64,10 @@
       }
     }
 
-    // User-visible reliability path. IMPORTANT: do not call scene.serve() synchronously from
-    // the DOM capture phase. Doing so disables the Phaser InteractiveObject before Phaser has
-    // finished dispatching the same pointerup and can leave the scene locked with its Clock no
-    // longer advancing. Record the real visible click, allow Phaser to handle it first, then
-    // invoke the same canonical serve() only when the order is still ready/unlocked afterward.
+    // User-visible reliability path. Record the real visible click in DOM capture, allow Phaser
+    // to dispatch first, then request the same canonical serve() only if the order did not advance.
+    // CraftRound.serve() itself is single-flight and deferred, so Phaser + native paths cannot
+    // double-submit the same order.
     const nativePointerUp=e=>{
       if(!canvas||!ready(scene)||scene.roundComplete)return;
       const cr=canvas.getBoundingClientRect();if(!cr.width||!cr.height)return;
@@ -79,12 +91,12 @@
     const priorDebug=scene.debugState?.bind(scene);
     if(priorDebug&&!scene.__g3ServeDebugWrapped){
       scene.__g3ServeDebugWrapped=true;
-      scene.debugState=function(){return {...priorDebug(),serveReadyInvariant:ready(scene),serveInputEnabled:!!scene.serveButton?.input?.enabled,serveReadyRepairCount:scene.g3ServeReadyRepairCount||0,serveReadyBlockedDisableCount:scene.g3ServeReadyBlockedDisableCount||0,serveReadyBlockedRemoveCount:scene.g3ServeReadyBlockedRemoveCount||0,serveNativePointerCount:scene.g3ServeNativePointerCount||0,serveNativeFallbackCount:scene.g3ServeNativeFallbackCount||0,serveNativeLast:scene.g3ServeNativeLast||null};};
+      scene.debugState=function(){return {...priorDebug(),serveReadyInvariant:ready(scene),serveInputEnabled:!!scene.serveButton?.input?.enabled,serveReadyRepairCount:scene.g3ServeReadyRepairCount||0,serveReadyBlockedDisableCount:scene.g3ServeReadyBlockedDisableCount||0,serveReadyBlockedRemoveCount:scene.g3ServeReadyBlockedRemoveCount||0,serveNativePointerCount:scene.g3ServeNativePointerCount||0,serveNativeFallbackCount:scene.g3ServeNativeFallbackCount||0,servePending:!!scene.__g3ServePending,serveNativeLast:scene.g3ServeNativeLast||null};};
     }
     const cleanup=()=>{scene.game?.events?.off?.('poststep',sync);canvas?.removeEventListener('pointerup',nativePointerUp,true);scene.__g3ServeReadyGuard=false;};
     scene.events.once('shutdown',cleanup);scene.events.once('destroy',cleanup);
   }
   const priorCreate=CraftRound.prototype.create;
   CraftRound.prototype.create=function(){priorCreate.call(this);this.time?.delayedCall?.(20,()=>attach(this));};
-  window.__ADUGAME_G3_COMMERCIAL_ART_V2_SERVE_GUARD__={loaded:true,version:'2.37',readyOrderInputInvariant:true,nativeCanvasServeFallback:true,nativeFallbackAfterPhaserDispatch:true,usesLiveButtonBounds:true,usesRealServeMethod:true,blockedForeignDisable:true,blockedForeignRemove:true,realServeDisableAllowed:true,generatedVisualAssets:0};
+  window.__ADUGAME_G3_COMMERCIAL_ART_V2_SERVE_GUARD__={loaded:true,version:'2.38',readyOrderInputInvariant:true,nativeCanvasServeFallback:true,nativeFallbackAfterPhaserDispatch:true,canonicalServeAfterPointerDispatch:true,singleFlightServe:true,usesLiveButtonBounds:true,usesRealServeMethod:true,blockedForeignDisable:true,blockedForeignRemove:true,realServeDisableAllowed:true,generatedVisualAssets:0};
 })();
