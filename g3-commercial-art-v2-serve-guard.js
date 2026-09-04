@@ -1,4 +1,4 @@
-// ADUGAME G3 commercial-art v2.38 — visible serve-button reliability invariant.
+// ADUGAME G3 commercial-art v2.39 — visible serve-button reliability invariant.
 // A valid unlocked order must submit when the user releases on the visible serve button,
 // even if a legacy Phaser wrapper replaces/disables its internal InteractiveObject.
 (() => {
@@ -9,8 +9,9 @@
   CraftRound.prototype.serve=function(...args){
     // Never let the canonical serve() disable its InteractiveObject while Phaser is still
     // dispatching the same pointerup. Queue exactly one canonical call for the next macrotask.
-    // This preserves the real game method/state transitions while avoiding the stuck Clock/lock
-    // observed when disableInteractive() runs inside the live pointer dispatch stack.
+    // While that canonical call is scheduling its reaction/next-order callbacks, mirror each
+    // Phaser Clock delayedCall with a browser-timer fallback guarded by the same once() closure.
+    // No validation/state is bypassed: priorServe still owns every actual game transition.
     if(this.__g3ServePending)return;
     this.__g3ServePending=true;
     const scene=this;
@@ -18,7 +19,24 @@
       scene.__g3ServePending=false;
       if(!scene.sys?.isActive?.()||scene.roundComplete)return;
       scene.__g3ServeDisableAllowed=true;
-      try{return priorServe.apply(scene,args);}finally{scene.__g3ServeDisableAllowed=false;}
+      const clock=scene.time,rawDelayed=clock?.delayedCall;
+      if(clock&&typeof rawDelayed==='function'&&typeof window!=='undefined'&&typeof window.setTimeout==='function'){
+        clock.delayedCall=function(delay,callback,args,scope){
+          let fired=false;
+          const once=()=>{
+            if(fired||!scene.sys?.isActive?.())return;
+            fired=true;
+            return callback?.apply(scope||scene,Array.isArray(args)?args:[]);
+          };
+          const evt=rawDelayed.call(clock,delay,once);
+          window.setTimeout(once,Math.max(0,Number(delay)||0)+120);
+          return evt;
+        };
+      }
+      try{return priorServe.apply(scene,args);}finally{
+        if(clock&&rawDelayed)clock.delayedCall=rawDelayed;
+        scene.__g3ServeDisableAllowed=false;
+      }
     };
     if(typeof window!=='undefined'&&typeof window.setTimeout==='function'){window.setTimeout(run,0);return;}
     return run();
@@ -98,5 +116,5 @@
   }
   const priorCreate=CraftRound.prototype.create;
   CraftRound.prototype.create=function(){priorCreate.call(this);this.time?.delayedCall?.(20,()=>attach(this));};
-  window.__ADUGAME_G3_COMMERCIAL_ART_V2_SERVE_GUARD__={loaded:true,version:'2.38',readyOrderInputInvariant:true,nativeCanvasServeFallback:true,nativeFallbackAfterPhaserDispatch:true,canonicalServeAfterPointerDispatch:true,singleFlightServe:true,usesLiveButtonBounds:true,usesRealServeMethod:true,blockedForeignDisable:true,blockedForeignRemove:true,realServeDisableAllowed:true,generatedVisualAssets:0};
+  window.__ADUGAME_G3_COMMERCIAL_ART_V2_SERVE_GUARD__={loaded:true,version:'2.39',readyOrderInputInvariant:true,nativeCanvasServeFallback:true,nativeFallbackAfterPhaserDispatch:true,canonicalServeAfterPointerDispatch:true,singleFlightServe:true,resilientCanonicalDelayedCalls:true,usesLiveButtonBounds:true,usesRealServeMethod:true,blockedForeignDisable:true,blockedForeignRemove:true,realServeDisableAllowed:true,generatedVisualAssets:0};
 })();
