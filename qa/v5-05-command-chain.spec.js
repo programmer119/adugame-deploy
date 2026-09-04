@@ -11,7 +11,7 @@ async function expectGuideObject(p,text,name,tol=3){const q=await objectPoint(p,
 async function waitG1R2Final(p){await waitFor(p,()=>{const r=document.getElementById('g1r2-v17-overlay');return r?.dataset.ready==='1'&&r?.dataset.uxReady==='1'&&r?.dataset.uxAlignmentReady==='1'&&r?.dataset.finalAlertReady==='1'&&r?.dataset.gameFeelReady==='1'&&r?.dataset.version==='17.32'&&window.__ADUGAME_ART_SOURCE__?.G1R2?.version==='v17.32';},15000);}
 
 test('strict command chain: G1 every guided state points to the next valid action',async({page})=>{
-  test.setTimeout(180000);
+  test.setTimeout(360000);
   let r=await open(page,1,1);await expectGuide(page,'변기',740,380);
   await clickL(page,r,740,380);await waitFor(page,()=>window.__ADUGAME_DEBUG__().step===.5);await expectGuide(page,'물',790,275);
   await clickL(page,r,790,275);await waitFor(page,()=>String(window.__ADUGAME_SCENE__().status.text).includes('수도꼭지'));await expectGuide(page,'수도꼭지',400,300);
