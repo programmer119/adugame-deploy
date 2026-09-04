@@ -11,7 +11,7 @@
   function attach(scene){
     if(scene.scene?.key!=='G1R2'||scene.__g1v1730Motion)return;
     const root=document.getElementById('g1r2-v17-overlay');
-    if(!root){scene.time.delayedCall(80,()=>attach(scene));return;}
+    if(!root){window.setTimeout(()=>attach(scene),80);return;}
     scene.__g1v1730Motion=true;
     const focus=[...root.querySelectorAll('div')].find(d=>d.style.borderWidth==='5px'&&d.style.position==='absolute'&&d.style.transform.includes('translate'));
     const dropTarget=root.querySelector('.g1v17-paste-drop-target');
@@ -121,4 +121,10 @@
 
   const prior=G1R2.prototype.create;
   G1R2.prototype.create=function(){prior.call(this);this.time.delayedCall(1740,()=>attach(this));};
+  const bootstrap=()=>{
+    const scene=window.__ADUGAME_SCENE__?.();
+    if(scene?.scene?.key==='G1R2'){attach(scene);return;}
+    window.setTimeout(bootstrap,120);
+  };
+  window.setTimeout(bootstrap,0);
 })();
